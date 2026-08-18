@@ -79,7 +79,10 @@ export default function App() {
             <div className="w-full h-full flex flex-col justify-between py-1 overflow-hidden">
               {/* Active Orders Horizontal Bar */}
               <OrderBar
-                orders={state.activeOrders}
+                orders={[
+                  ...(state.specialOrder ? [state.specialOrder] : []),
+                  ...state.activeOrders,
+                ]}
                 grid={state.grid}
                 onFulfillOrder={fulfillOrder}
               />

@@ -431,6 +431,66 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
           </svg>
         );
 
+      // ===== TEXTILES CHAIN =====
+      case 'textile_1': // Enchanted Thread
+      case 'textile_2': // Woven Silk Spool
+      case 'textile_3': // Loomed Cloth
+      case 'textile_4': // Embroidered Fabric
+      case 'textile_5': // Royal Tapestry
+      case 'textile_6': // Starlight Vestment
+      case 'textile_7': // Ceremonial Regalia
+      case 'textile_8': // Crown Sovereign Mantle
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            <circle cx="50" cy="50" r="42" fill={color} opacity="0.25" />
+            {/* Wooden spindle or garment shape */}
+            {iconType === 'textile_1' || iconType === 'textile_2' ? (
+              <>
+                <rect x="25" y="42" width="50" height="16" rx="4" fill={color} stroke="#701a75" strokeWidth="2" />
+                <ellipse cx="25" cy="50" rx="6" ry="12" fill="#d97706" />
+                <ellipse cx="75" cy="50" rx="6" ry="12" fill="#d97706" />
+                <path d="M35 42 Q 50 25 65 42" stroke="#fdf4ff" strokeWidth="2.5" fill="none" />
+              </>
+            ) : iconType === 'textile_3' || iconType === 'textile_4' ? (
+              <>
+                <rect x="22" y="28" width="56" height="44" rx="4" fill={color} stroke="#4a044e" strokeWidth="2" />
+                <path d="M22 40 L78 40 M22 55 L78 55" stroke="#facc15" strokeWidth="2" strokeDasharray="4 2" />
+                <circle cx="50" cy="48" r="6" fill="#fef08a" />
+              </>
+            ) : (
+              <>
+                {/* Royal Mantle / Vestment */}
+                <path d="M 30 25 Q 50 35 70 25 L 80 80 Q 50 72 20 80 Z" fill={color} stroke="#facc15" strokeWidth="2.5" />
+                <circle cx="50" cy="36" r="8" fill="#fef08a" stroke="#ca8a04" strokeWidth="2" />
+                <polygon points="50,22 53,28 60,29 55,34 57,40 50,37 43,40 45,34 40,29 47,28" fill="#facc15" />
+              </>
+            )}
+          </svg>
+        );
+
+      // ===== CRYSTALS & RUNESTONES CHAIN =====
+      case 'crystal_1': // Stone Fragment
+      case 'crystal_2': // Glowing Shard
+      case 'crystal_3': // Inscribed Rune Stone
+      case 'crystal_4': // Enchanted Geode
+      case 'crystal_5': // Arcane Prism
+      case 'crystal_6': // Radiant Bloomstone
+      case 'crystal_7': // Ancient Heartstone
+      case 'crystal_8': // Primordial Core Conduit
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            <circle cx="50" cy="50" r="42" fill={color} opacity="0.3" />
+            {/* Cut Crystal Prismatic Facets */}
+            <polygon points="50,15 78,35 68,82 32,82 22,35" fill={color} stroke="#ffffff" strokeWidth="2" />
+            <polygon points="50,15 68,82 50,75 32,82" fill="#67e8f9" opacity="0.7" />
+            <polygon points="50,15 22,35 32,82" fill="#0891b2" opacity="0.8" />
+            <polygon points="50,15 78,35 68,82" fill="#38bdf8" opacity="0.6" />
+            {/* Runic glyph inside */}
+            <circle cx="50" cy="48" r="7" fill="#ffffff" opacity="0.9" />
+            <polygon points="50,38 52,46 60,48 52,50 50,58 48,50 40,48 48,46" fill="#fef08a" />
+          </svg>
+        );
+
       // ===== GENERATORS =====
       case 'gen_garden':
         return (
@@ -526,6 +586,42 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             <path d="M 28 32 Q 50 12 72 32 Z" fill="#eab308" stroke="#a16207" strokeWidth="2" />
             <line x1="50" y1="6" x2="50" y2="16" stroke="#facc15" strokeWidth="3" strokeLinecap="round" />
             <line x1="45" y1="10" x2="55" y2="10" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
+          </svg>
+        );
+
+      case 'gen_loom':
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            {/* Wooden Loom Frame */}
+            <rect x="18" y="25" width="64" height="60" rx="3" fill="none" stroke="#701a75" strokeWidth="4" />
+            <line x1="18" y1="35" x2="82" y2="35" stroke="#d946ef" strokeWidth="3" />
+            <line x1="18" y1="75" x2="82" y2="75" stroke="#d946ef" strokeWidth="3" />
+            {/* Warp & Weft Threads */}
+            <line x1="32" y1="35" x2="32" y2="75" stroke="#fdf4ff" strokeWidth="1.5" />
+            <line x1="44" y1="35" x2="44" y2="75" stroke="#fdf4ff" strokeWidth="1.5" />
+            <line x1="56" y1="35" x2="56" y2="75" stroke="#fdf4ff" strokeWidth="1.5" />
+            <line x1="68" y1="35" x2="68" y2="75" stroke="#fdf4ff" strokeWidth="1.5" />
+            {/* Shutter bobbin */}
+            <polygon points="26,55 74,55 70,51 30,51" fill="#facc15" stroke="#ca8a04" strokeWidth="1" />
+            {/* Glowing magic spool on top */}
+            <circle cx="50" cy="20" r="8" fill="#e879f9" stroke="#ffffff" strokeWidth="1.5" />
+          </svg>
+        );
+
+      case 'gen_quarry':
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            {/* Dark Stone Cave / Mine Shaft */}
+            <path d="M 20 85 L 20 40 Q 50 15 80 40 L 80 85 Z" fill="#0f172a" stroke="#0e7490" strokeWidth="3" />
+            <path d="M 32 85 L 32 50 Q 50 30 68 50 L 68 85 Z" fill="#164e63" />
+            {/* Wooden mine support timbers */}
+            <line x1="30" y1="45" x2="70" y2="45" stroke="#78350f" strokeWidth="4" />
+            <line x1="32" y1="45" x2="32" y2="85" stroke="#78350f" strokeWidth="3.5" />
+            <line x1="68" y1="45" x2="68" y2="85" stroke="#78350f" strokeWidth="3.5" />
+            {/* Glowing Prismatic Crystals erupting from mine */}
+            <polygon points="50,38 42,75 58,75" fill="#22d3ee" stroke="#ffffff" strokeWidth="1.5" />
+            <polygon points="40,52 32,80 46,80" fill="#06b6d4" />
+            <polygon points="60,52 54,80 68,80" fill="#67e8f9" />
           </svg>
         );
 

@@ -17,14 +17,15 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   rewards,
   onClose,
 }) => {
-  const isChapter10 = level === 10 || progression?.isChapterMilestone;
+  const isChapterMilestone = level === 10 || level === 20 || progression?.isChapterMilestone;
+  const milestoneLabel = level === 20 ? 'Chapter 2 Milestone' : 'Chapter 1 Milestone';
   const unlocks = progression?.unlocks;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md select-none animate-in fade-in duration-200">
       <div
         className={`w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center text-white relative overflow-hidden border-2 ${
-          isChapter10
+          isChapterMilestone
             ? 'bg-gradient-to-b from-amber-950 via-slate-900 to-indigo-950 border-yellow-400 shadow-amber-500/40'
             : 'bg-gradient-to-b from-slate-900 via-indigo-950 to-slate-900 border-amber-400'
         }`}
@@ -32,25 +33,25 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         {/* Glow Effects */}
         <div
           className={`absolute -top-12 -left-12 w-40 h-40 rounded-full blur-3xl pointer-events-none ${
-            isChapter10 ? 'bg-yellow-400/30' : 'bg-amber-500/20'
+            isChapterMilestone ? 'bg-yellow-400/30' : 'bg-amber-500/20'
           }`}
         />
         <div
           className={`absolute -bottom-12 -right-12 w-40 h-40 rounded-full blur-3xl pointer-events-none ${
-            isChapter10 ? 'bg-amber-500/30' : 'bg-purple-500/20'
+            isChapterMilestone ? 'bg-amber-500/30' : 'bg-purple-500/20'
           }`}
         />
 
         {/* Level Badge Icon */}
         <div
           className={`mx-auto w-20 h-20 rounded-full p-1 shadow-2xl flex items-center justify-center mb-3 ${
-            isChapter10
+            isChapterMilestone
               ? 'bg-gradient-to-tr from-yellow-300 via-amber-400 to-yellow-100 ring-4 ring-yellow-400/40 animate-pulse'
               : 'bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-300'
           }`}
         >
           <div className="w-full h-full rounded-full bg-slate-950 flex flex-col items-center justify-center">
-            {isChapter10 ? (
+            {isChapterMilestone ? (
               <Crown className="w-7 h-7 text-yellow-300 mb-0.5" />
             ) : (
               <Trophy className="w-6 h-6 text-yellow-300 mb-0.5" />
@@ -60,10 +61,10 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         </div>
 
         {/* Title & Subtitle */}
-        {isChapter10 && (
+        {isChapterMilestone && (
           <div className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-400/50 text-[11px] font-black text-yellow-300 uppercase tracking-wider mb-2">
             <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-            <span>Chapter 1 Milestone</span>
+            <span>{milestoneLabel}</span>
           </div>
         )}
 
@@ -163,12 +164,12 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         <button
           onClick={onClose}
           className={`w-full py-3 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg hover:brightness-110 active:scale-98 transition-all cursor-pointer ${
-            isChapter10
+            isChapterMilestone
               ? 'bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-300 text-slate-950 shadow-yellow-500/40'
               : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-amber-500/30'
           }`}
         >
-          {isChapter10 ? BALANCE.CHAPTER_1_CTA_TEXT : 'Claim & Continue Merging'}
+          {isChapterMilestone ? BALANCE.CHAPTER_2_CTA_TEXT : 'Claim & Continue Merging'}
         </button>
       </div>
     </div>

@@ -205,6 +205,7 @@ export function hydrateAndMigrateSave(
       activeOrders: Array.isArray(parsed.activeOrders) && parsed.activeOrders.length > 0
         ? parsed.activeOrders
         : INITIAL_ORDERS,
+      specialOrder: parsed.specialOrder && typeof parsed.specialOrder === 'object' ? parsed.specialOrder : undefined,
       activeQuests: Array.isArray(parsed.activeQuests) && parsed.activeQuests.length > 0
         ? parsed.activeQuests
         : INITIAL_QUESTS,

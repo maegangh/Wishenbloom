@@ -5,6 +5,8 @@ export type ItemChainId =
   | 'treasures'
   | 'blacksmith'
   | 'creatures'
+  | 'textiles'
+  | 'crystals'
   | 'energy'
   | 'gems'
   | 'chests';
@@ -93,6 +95,7 @@ export interface NPCOrder {
     chestId?: string;
   };
   isStoryOrder?: boolean;
+  isSpecialOrder?: boolean;
 }
 
 export interface NPCDef {
@@ -180,6 +183,7 @@ export interface GameState {
 
   // Active Orders & Quests
   activeOrders: NPCOrder[];
+  specialOrder?: NPCOrder | null;
   activeQuests: Quest[];
   
   // Kingdom Restoration

@@ -38,8 +38,10 @@ import {
 } from '../logic/generatorLogic';
 import {
   generateSafeRandomOrder,
+  generateSpecialOrder,
   isOrderFulfillable,
 } from '../logic/orderLogic';
+import { BALANCE } from '../data/balance';
 import {
   PRIMARY_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
@@ -238,6 +240,8 @@ export function useGameState() {
                 : genId.startsWith('gen_forge') ? 'forge_1'
                 : genId.startsWith('gen_wizard') ? 'book_1'
                 : genId.startsWith('gen_nest') ? 'creature_1'
+                : genId.startsWith('gen_loom') ? 'textile_1'
+                : genId.startsWith('gen_quarry') ? 'crystal_1'
                 : 'coin_item_1';
 
               spawnItemOnFirstEmpty(newGrid, {
@@ -291,6 +295,11 @@ export function useGameState() {
           },
         });
 
+        let newSpecialOrder = prev.specialOrder;
+        if (newLevel >= BALANCE.SPECIAL_ORDER_UNLOCK_LEVEL && !newSpecialOrder) {
+          newSpecialOrder = generateSpecialOrder(newGrid, newInventory, newLevel);
+        }
+
         return {
           ...prev,
           level: newLevel,
@@ -303,6 +312,7 @@ export function useGameState() {
           grid: newGrid,
           inventory: newInventory,
           maxInventorySlots: maxSlots,
+          specialOrder: newSpecialOrder,
         };
       }
 
@@ -714,15 +724,19 @@ export function useGameState() {
 
   // 9. Fulfill Order (with safe random replacement order generation)
   const fulfillOrder = useCallback((orderId: string) => {
-    const order = state.activeOrders.find((o) => o.id === orderId);
+    const isSpecial = state.specialOrder?.id === orderId;
+    const order = isSpecial
+      ? state.specialOrder
+      : state.activeOrders.find((o) => o.id === orderId);
+
     if (!order) return;
 
     if (!checkOrderAvailable(order)) return;
 
     audio.playOrderComplete();
     confetti({
-      particleCount: 50,
-      spread: 60,
+      particleCount: isSpecial ? 80 : 50,
+      spread: isSpecial ? 80 : 60,
       origin: { y: 0.3 },
     });
 
@@ -742,15 +756,6 @@ export function useGameState() {
         }
       }
 
-      // Generate replacement order using safe producible chains
-      const remainingOrders = prev.activeOrders.filter((o) => o.id !== orderId);
-      const newOrder = generateSafeRandomOrder(
-        newGrid,
-        prev.inventory,
-        prev.level,
-        remainingOrders.map((o) => o.id)
-      );
-
       // Spawn bonus chest if rewarded
       if (order.rewards.chestId) {
         const empty = findNearestEmpty(newGrid, 4, 3);
@@ -761,6 +766,24 @@ export function useGameState() {
             tileState: 'normal',
           };
         }
+      }
+
+      let updatedActiveOrders = prev.activeOrders;
+      let updatedSpecialOrder = prev.specialOrder;
+
+      if (isSpecial) {
+        // Generate replacement special order
+        updatedSpecialOrder = generateSpecialOrder(newGrid, prev.inventory, prev.level);
+      } else {
+        // Generate replacement order using safe producible chains
+        const remainingOrders = prev.activeOrders.filter((o) => o.id !== orderId);
+        const newOrder = generateSafeRandomOrder(
+          newGrid,
+          prev.inventory,
+          prev.level,
+          remainingOrders.map((o) => o.id)
+        );
+        updatedActiveOrders = [...remainingOrders, newOrder];
       }
 
       // Action-driven tutorial advance on order completion (Step 3 -> Step 4)
@@ -775,7 +798,8 @@ export function useGameState() {
         gems: prev.gems + (order.rewards.gems || 0),
         energy: Math.min(prev.maxEnergy, prev.energy + (order.rewards.energy || 0)),
         grid: newGrid,
-        activeOrders: [...remainingOrders, newOrder],
+        activeOrders: updatedActiveOrders,
+        specialOrder: updatedSpecialOrder,
         tutorialStep: nextTutorialStep,
         stats: {
           ...prev.stats,
@@ -788,7 +812,7 @@ export function useGameState() {
 
     grantXP(order.rewards.xp);
     updateQuests('fulfill_order', 1);
-  }, [state.activeOrders, checkOrderAvailable, grantXP, updateQuests]);
+  }, [state.activeOrders, state.specialOrder, checkOrderAvailable, grantXP, updateQuests]);
 
   // 10. Restore Kingdom Stage
   const restoreKingdomStage = useCallback((areaId: string) => {

@@ -44,26 +44,45 @@ export const OrderBar: React.FC<OrderBarProps> = ({
               className={`relative flex items-center gap-2.5 px-3 py-2 rounded-2xl border transition-all shadow-md ${
                 isComplete
                   ? 'bg-gradient-to-r from-emerald-950/90 via-slate-900/90 to-emerald-950/90 border-emerald-500/60 shadow-emerald-500/20'
+                  : order.isSpecialOrder
+                  ? 'bg-gradient-to-r from-amber-950/70 via-slate-900/90 to-purple-950/70 border-amber-500/60 shadow-amber-500/15'
                   : 'bg-slate-900/80 border-slate-700/60'
               }`}
             >
               {/* NPC Avatar */}
               <div className="relative">
                 <NpcAvatar avatarId={order.npcAvatar} size={46} />
-                {order.isStoryOrder && (
+                {order.isSpecialOrder ? (
+                  <span className="absolute -top-1.5 -left-1.5 bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase shadow-md flex items-center gap-0.5">
+                    👑 Special
+                  </span>
+                ) : order.isStoryOrder ? (
                   <span className="absolute -top-1 -left-1 bg-amber-500 text-slate-950 text-[9px] font-black px-1 rounded-full uppercase">
                     Story
                   </span>
-                )}
+                ) : null}
               </div>
 
               {/* Order Info & Requested Items */}
               <div className="flex flex-col gap-1">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-slate-100">{order.npcName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-slate-100">{order.npcName}</span>
+                    {order.isSpecialOrder && (
+                      <span className="text-[10px] text-amber-300 font-semibold px-1 py-0.2 rounded bg-amber-950/60 border border-amber-500/40">
+                        Commission
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-300">
                     <span>🪙 {order.rewards.coins}</span>
                     <span className="text-purple-300">✨ {order.rewards.xp} XP</span>
+                    {order.rewards.gems && (
+                      <span className="text-fuchsia-300">💎 {order.rewards.gems}</span>
+                    )}
+                    {order.rewards.chestId && (
+                      <span className="text-yellow-400">📦 Chest</span>
+                    )}
                   </div>
                 </div>
 

@@ -149,6 +149,40 @@ export function getProducibleItemPools(
     });
   }
 
+  // 7. Enchanted Loom -> Textiles
+  const hasLoom = Array.from(ownedGeneratorIds).some((id) => id.startsWith('gen_loom'));
+  if (hasLoom) {
+    const maxLoomLevel = Math.max(
+      ...Array.from(ownedGeneratorIds)
+        .filter((id) => id.startsWith('gen_loom'))
+        .map((id) => GENERATORS[id]?.level || 1)
+    );
+    const maxFeasibleTier = Math.min(levelTierCap, maxLoomLevel + 2);
+    pools.push({
+      itemPrefix: 'textile_',
+      chainId: 'textiles',
+      minTier: 1,
+      maxTier: Math.max(1, maxFeasibleTier),
+    });
+  }
+
+  // 8. Runic Excavation -> Crystals
+  const hasQuarry = Array.from(ownedGeneratorIds).some((id) => id.startsWith('gen_quarry'));
+  if (hasQuarry) {
+    const maxQuarryLevel = Math.max(
+      ...Array.from(ownedGeneratorIds)
+        .filter((id) => id.startsWith('gen_quarry'))
+        .map((id) => GENERATORS[id]?.level || 1)
+    );
+    const maxFeasibleTier = Math.min(levelTierCap, maxQuarryLevel + 2);
+    pools.push({
+      itemPrefix: 'crystal_',
+      chainId: 'crystals',
+      minTier: 1,
+      maxTier: Math.max(1, maxFeasibleTier),
+    });
+  }
+
   // Fallback guard
   if (pools.length === 0) {
     pools.push({ itemPrefix: 'herb_', chainId: 'herbs', minTier: 1, maxTier: 2 });
@@ -198,6 +232,8 @@ export function generateSafeRandomOrder(
   else if (primaryPrefix === 'forge_') npcId = 'balgor';
   else if (primaryPrefix === 'book_') npcId = 'valerie';
   else if (primaryPrefix === 'creature_') npcId = 'sylas';
+  else if (primaryPrefix === 'textile_') npcId = 'celeste';
+  else if (primaryPrefix === 'crystal_') npcId = 'gideon';
   else if (primaryPrefix === 'coin_item_') npcId = 'aurelia';
   else if (Math.random() > 0.6) npcId = 'pip';
 
@@ -241,6 +277,16 @@ export function generateSafeRandomOrder(
       'A true friend of the high cliffs. The winged beasts salute you!',
       'The drakes fly higher whenever the living Bloom grows stronger.',
     ],
+    celeste: [
+      'Every thread woven into these silks holds a stanza of our royal history.',
+      'The starlight weave is immaculate! This will adorn the grand hall.',
+      'Wishenbloom’s regalia shines with genuine Bloom luminescence once more.',
+    ],
+    gideon: [
+      'The subterranean bedrock hums when these crystals resonate in harmony!',
+      'An exquisite runestone specimen! The ancient leylines are stirring.',
+      'My excavations confirm the conduits were fortified, not destroyed.',
+    ],
   };
 
   const npcQuoteList = quotes[npc.id] || quotes.elowen;
@@ -262,6 +308,88 @@ export function generateSafeRandomOrder(
       chestId: bonusChest,
     },
     isStoryOrder: false,
+    isSpecialOrder: false,
+  };
+}
+
+/**
+ * Generates a high-value, optional Special Order (Royal Commission) for Level 15+ players.
+ */
+export function generateSpecialOrder(
+  grid: (BoardItem | null)[][],
+  inventory: (BoardItem | null)[],
+  level: number
+): NPCOrder | null {
+  if (level < BALANCE.SPECIAL_ORDER_UNLOCK_LEVEL) {
+    return null;
+  }
+
+  const pools = getProducibleItemPools(grid, inventory, level);
+  if (pools.length === 0) return null;
+
+  // Pick 1-2 distinct high-tier items from available pools
+  const numReqs = Math.random() > 0.5 ? 2 : 1;
+  const requirements: { itemId: string; count: number }[] = [];
+  let totalTier = 0;
+  let primaryPrefix = 'textile_';
+
+  for (let i = 0; i < numReqs; i++) {
+    const pool = pools[Math.floor(Math.random() * pools.length)];
+    // Select upper half of tiers for special commission
+    const minT = Math.max(pool.minTier, Math.floor((pool.minTier + pool.maxTier) / 2));
+    const tier = Math.floor(Math.random() * (pool.maxTier - minT + 1)) + minT;
+    const reqItemId = `${pool.itemPrefix}${tier}`;
+    primaryPrefix = pool.itemPrefix;
+
+    if (ITEMS[reqItemId] && !requirements.some((r) => r.itemId === reqItemId)) {
+      requirements.push({ itemId: reqItemId, count: 1 });
+      totalTier += tier;
+    }
+  }
+
+  if (requirements.length === 0) {
+    requirements.push({ itemId: 'potion_4', count: 1 });
+    totalTier = 4;
+  }
+
+  let npcId = 'aurelia';
+  if (primaryPrefix === 'textile_') npcId = 'celeste';
+  else if (primaryPrefix === 'crystal_') npcId = 'gideon';
+  else if (primaryPrefix === 'potion_') npcId = 'valerie';
+  else if (primaryPrefix === 'book_') npcId = 'valerie';
+
+  const npc = NPCS[npcId] || NPCS['aurelia'];
+
+  const coins = Math.round(
+    (Math.pow(2.0, totalTier) * 12 + totalTier * 30) * BALANCE.SPECIAL_ORDER_COIN_MULTIPLIER
+  );
+  const xp = Math.round((totalTier * 35 + 40) * BALANCE.SPECIAL_ORDER_XP_MULTIPLIER);
+  const gems = Math.max(5, Math.floor(totalTier * 2.5));
+  const chestId = totalTier >= 6 ? 'chest_golden' : 'chest_silver';
+
+  const specialQuotes: Record<string, string> = {
+    aurelia: 'The Royal Commission urgently requests this masterwork for the grand restoration celebration!',
+    celeste: 'The Atelier requires these exquisite materials to finish the Sovereign Coronation Tapestry.',
+    gideon: 'An urgent subterranean survey requires resonant conduit samples. Immense royal bounties await!',
+    valerie: 'The High Observatory must align these rare arcana to fortify the regional Bloom barriers.',
+  };
+
+  return {
+    id: `special_order_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    npcId: npc.id,
+    npcName: npc.name,
+    npcRole: 'Royal Commission',
+    npcAvatar: npc.avatar,
+    npcQuote: specialQuotes[npc.id] || specialQuotes.aurelia,
+    requirements,
+    rewards: {
+      coins,
+      xp,
+      gems,
+      chestId,
+    },
+    isStoryOrder: false,
+    isSpecialOrder: true,
   };
 }
 

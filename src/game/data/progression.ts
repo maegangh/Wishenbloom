@@ -272,22 +272,224 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     isChapterMilestone: true,
   },
+  11: {
+    level: 11,
+    xpRequired: 1800,
+    cumulativeXp: 5500,
+    title: 'After the Awakening',
+    subtitle: 'The Reliquary Cipher',
+    storySnippet:
+      'A cylindrical artifact retrieved from the Royal Reliquary bears an unbroken wax seal depicting three interconnected conduits—with one deliberately severed.',
+    unlocks: {
+      mechanicName: 'Relic Ciphers',
+      mechanicDescription: 'Valuable Royal Relic and high-tier artisan orders begin appearing across the realm.',
+    },
+    rewards: {
+      coins: 350,
+      gems: 10,
+      energy: 100,
+    },
+  },
+  12: {
+    level: 12,
+    xpRequired: 2300,
+    cumulativeXp: 7800,
+    title: 'The Old Road',
+    subtitle: 'The Moonstone Causeway',
+    storySnippet:
+      'Centuries of morning mist lift from the mountain pass, revealing the Moonstone Causeway—the grand ceremonial highway leading to the outer artisan valleys.',
+    unlocks: {
+      kingdomAreaId: 'causeway',
+      mechanicName: 'Kingdom Expansion',
+      mechanicDescription: 'Restore the Moonstone Causeway to reconnect the outer artisan provinces!',
+    },
+    rewards: {
+      coins: 400,
+      gems: 12,
+      energy: 100,
+    },
+  },
+  13: {
+    level: 13,
+    xpRequired: 2900,
+    cumulativeXp: 10700,
+    title: 'Threads of the Crown',
+    subtitle: 'Master Weaver Celeste',
+    storySnippet:
+      'Master Weaver Celeste arrives across the Causeway with her Enchanted Loom, spinning Bloom-infused silks and historic ceremonial regalia.',
+    unlocks: {
+      generatorId: 'gen_loom_1',
+      generatorName: 'Enchanted Loom',
+      chainId: 'textiles',
+      chainName: 'Enchanted Textiles',
+      npcId: 'celeste',
+      npcName: 'Celeste',
+      npcRole: 'Royal Weaver',
+      kingdomAreaId: 'atelier',
+      mechanicName: 'Royal Loom Atelier',
+      mechanicDescription: 'Weave enchanted threads into loomed cloth, embroidered fabrics, and sovereign regalia!',
+    },
+    rewards: {
+      coins: 450,
+      gems: 15,
+      energy: 100,
+    },
+  },
+  14: {
+    level: 14,
+    xpRequired: 3600,
+    cumulativeXp: 14300,
+    title: 'Echoes of the Weaver',
+    subtitle: 'The Prophetic Tapestries',
+    storySnippet:
+      'Celeste confides that her guild’s master patterns were locked away decades ago when the court tapestry began weaving images of the Bloom abruptly halting.',
+    unlocks: {
+      mechanicName: 'Artisan Lore',
+      mechanicDescription: 'Advanced artisan order combinations unlock in the order registry.',
+    },
+    rewards: {
+      coins: 500,
+      gems: 15,
+      energy: 100,
+    },
+  },
+  15: {
+    level: 15,
+    xpRequired: 4400,
+    cumulativeXp: 18700,
+    title: 'Chapter 2 Midpoint: The Royal Commission',
+    subtitle: 'Special Orders & Grand Bounties',
+    storySnippet:
+      'Princess Aurelia establishes the Royal Commission! Master artisans post high-value Special Orders offering rare chests, gems, and immense coin bounties.',
+    unlocks: {
+      mechanicName: 'Special Orders',
+      mechanicDescription: 'Optional high-reward Royal Commission orders now appear with golden borders and chest bounties!',
+    },
+    rewards: {
+      coins: 650,
+      gems: 25,
+      energy: 100,
+      chestItemId: 'chest_golden',
+    },
+  },
+  16: {
+    level: 16,
+    xpRequired: 5300,
+    cumulativeXp: 24000,
+    title: 'The Sealed Decrees',
+    subtitle: 'Uncovering the Royal Edict',
+    storySnippet:
+      'Archmage Valerie deciphers charred parchment fragments from the archives: a royal decree ordered subterranean Bloom conduits sealed shortly before the kingdom declined.',
+    unlocks: {
+      mechanicName: 'Deep Realm Lore',
+      mechanicDescription: 'New high-tier potion and spellbook orders reveal ancient historical secrets.',
+    },
+    rewards: {
+      coins: 550,
+      gems: 18,
+      energy: 100,
+    },
+  },
+  17: {
+    level: 17,
+    xpRequired: 6300,
+    cumulativeXp: 30300,
+    title: 'Heart of the Bloomstone',
+    subtitle: 'The Runic Excavation',
+    storySnippet:
+      'Deep Scribe Gideon excavates the bedrock beneath Wishenbloom, uncovering vibrant runestones and arcane prisms that channel subterranean Bloom conduits.',
+    unlocks: {
+      generatorId: 'gen_quarry_1',
+      generatorName: 'Runic Excavation',
+      chainId: 'crystals',
+      chainName: 'Enchanted Crystals',
+      npcId: 'gideon',
+      npcName: 'Gideon',
+      npcRole: 'Deep Scribe',
+      kingdomAreaId: 'quarry_sanctum',
+      mechanicName: 'Crystal Excavation',
+      mechanicDescription: 'Mine subterranean stone fragments, radiant rune stones, and arcane prisms!',
+    },
+    rewards: {
+      coins: 600,
+      gems: 20,
+      energy: 100,
+    },
+  },
+  18: {
+    level: 18,
+    xpRequired: 7500,
+    cumulativeXp: 37800,
+    title: 'The Artisan Vault',
+    subtitle: 'Strategic Pocket Expansion',
+    storySnippet:
+      'Balgor and Pip construct reinforced storage vaults within the quarry cliffside, granting the Bloomkeeper an additional permanent storage pocket.',
+    unlocks: {
+      inventorySlotIncrease: 1,
+      mechanicName: 'Vault Storage Expansion',
+      mechanicDescription: 'Permanent inventory storage increased to 7 slots!',
+    },
+    rewards: {
+      coins: 700,
+      gems: 22,
+      energy: 100,
+      inventorySlotsAdded: 1,
+    },
+  },
+  19: {
+    level: 19,
+    xpRequired: 8800,
+    cumulativeXp: 46600,
+    title: 'The Second Resonance',
+    subtitle: 'Harmonic Convergence',
+    storySnippet:
+      'The Sunfire Plaza, Celestial Spire, Dragon Roost, Causeway, and Atelier begin pulsating in harmonious synchronization. Ancient conduit runes flare to life.',
+    unlocks: {
+      mechanicName: 'Harmonic Convergence',
+      mechanicDescription: 'High-tier multi-chain orders prepare the realm for the conduit awakening.',
+    },
+    rewards: {
+      coins: 800,
+      gems: 25,
+      energy: 100,
+    },
+  },
+  20: {
+    level: 20,
+    xpRequired: 10500,
+    cumulativeXp: 57100,
+    title: 'Chapter 2 Milestone: Conduits of the Crown',
+    subtitle: 'The Outer Provinces Stir',
+    storySnippet:
+      'The entire central kingdom hums with glorious Bloom energy! The recovered relics prove the conduits were sealed as a sanctuary measure against an ancient cosmic storm. Beyond the mist, the seals on the Outer Provinces begin awakening!',
+    unlocks: {
+      mechanicName: 'Chapter 2 Milestone',
+      mechanicDescription: 'Chapter 2 Completed! The central province is fully revitalized and the outer realms call.',
+    },
+    rewards: {
+      coins: 1500,
+      gems: 60,
+      energy: 100,
+      chestItemId: 'chest_royal',
+    },
+    isChapterMilestone: true,
+  },
 };
 
 /**
- * Returns progression definition for a given level (or extrapolated if beyond level 10)
+ * Returns progression definition for a given level (or extrapolated if beyond level 20)
  */
 export function getLevelProgression(level: number): LevelProgressionDef {
   if (LEVEL_PROGRESSION[level]) {
     return LEVEL_PROGRESSION[level];
   }
 
-  // Graceful fallback / extrapolation for level 11+
-  const xpRequired = Math.round(1400 * Math.pow(1.25, level - 10));
+  // Graceful fallback / extrapolation for level 21+
+  const xpRequired = Math.round(10500 * Math.pow(1.2, level - 20));
   return {
     level,
     xpRequired,
-    cumulativeXp: 3700 + (level - 10) * 1400,
+    cumulativeXp: 57100 + (level - 20) * 10500,
     title: `Master Bloomkeeper ${level}`,
     subtitle: 'Guardian of the Realm',
     storySnippet: 'Your mastery over the Bloom deepens as you explore new frontiers of Wishenbloom.',
@@ -310,6 +512,8 @@ export function getUnlockedChainsForLevel(level: number): ItemChainId[] {
   if (level >= 7) chains.push('spellbooks');
   if (level >= 8) chains.push('creatures');
   if (level >= 10) chains.push('treasures');
+  if (level >= 13) chains.push('textiles');
+  if (level >= 17) chains.push('crystals');
   return chains;
 }
 

@@ -55,6 +55,24 @@ export const NPCS: Record<string, NPCDef> = {
     bio: 'Caretaker of the roosting cliffs who nurtures newborn magical drakes and gryphons.',
     color: '#ec4899',
   },
+  celeste: {
+    id: 'celeste',
+    name: 'Celeste',
+    role: 'Royal Weaver',
+    title: 'Atelier Artisan',
+    avatar: 'celeste',
+    bio: 'Master seamstress of the royal court whose loomed silks preserve records of Wishenbloom’s ceremonies and lost lineage.',
+    color: '#d946ef',
+  },
+  gideon: {
+    id: 'gideon',
+    name: 'Gideon',
+    role: 'Deep Scribe',
+    title: 'Runic Geologist',
+    avatar: 'gideon',
+    bio: 'An intrepid scholar of subterranean strata who excavates ancient runestones and Bloom conduit bedrock.',
+    color: '#06b6d4',
+  },
 };
 
 export const INITIAL_ORDERS: NPCOrder[] = [

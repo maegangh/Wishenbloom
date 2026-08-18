@@ -14,6 +14,7 @@ export const BALANCE = {
   STARTING_GEMS: 20,
   STARTING_INVENTORY_SLOTS: 5,
   LEVEL_6_INVENTORY_SLOTS: 6,
+  LEVEL_18_INVENTORY_SLOTS: 7,
 
   // === TIMED BUBBLE SYSTEM ===
   BUBBLE_SPAWN_CHANCE_NORMAL: 0.04, // 4% chance on merge
@@ -31,6 +32,7 @@ export const BALANCE = {
   BASE_MERGE_XP_TIER_5: 25,
   BASE_MERGE_XP_TIER_6: 50,
   BASE_MERGE_XP_TIER_7: 100,
+  BASE_MERGE_XP_TIER_8: 200,
 
   // === DISCOVERY REWARDS (Gems) ===
   COMPENDIUM_DISCOVERY_GEMS_TIER_1: 1,
@@ -38,23 +40,43 @@ export const BALANCE = {
   COMPENDIUM_DISCOVERY_GEMS_TIER_3: 2,
   COMPENDIUM_DISCOVERY_GEMS_TIER_4: 3,
   COMPENDIUM_DISCOVERY_GEMS_TIER_5: 5,
+  COMPENDIUM_DISCOVERY_GEMS_TIER_6: 8,
+  COMPENDIUM_DISCOVERY_GEMS_TIER_7: 12,
+  COMPENDIUM_DISCOVERY_GEMS_TIER_8: 20,
 
   // === ORDER TIER LIMITS BY PLAYER LEVEL ===
-  // Prevents impossible or overwhelming orders during onboarding
+  // Prevents impossible or overwhelming orders during onboarding & mid-game
   ORDER_MAX_TIER_BY_LEVEL: {
-    1: 2, // Only T1-T2 Herbs
-    2: 3, // Up to T3 Herbs
-    3: 3, // Up to T3 Herbs & Potions
-    4: 4, // Up to T4
-    5: 4, // Up to T4
-    6: 4, // Up to T4
-    7: 5, // Up to T5
-    8: 5, // Up to T5
-    9: 5, // Up to T5
+    1: 2,  // Only T1-T2 Herbs
+    2: 3,  // Up to T3 Herbs
+    3: 3,  // Up to T3 Herbs & Potions
+    4: 4,  // Up to T4
+    5: 4,  // Up to T4
+    6: 4,  // Up to T4
+    7: 5,  // Up to T5
+    8: 5,  // Up to T5
+    9: 5,  // Up to T5
     10: 5, // Up to T5
+    11: 5, // T2-T5
+    12: 5, // T2-T5
+    13: 5, // T2-T5 (New Textiles grace period)
+    14: 5, // T2-T5
+    15: 6, // T3-T6 (Special Orders unlock)
+    16: 6, // T3-T6
+    17: 6, // T3-T6 (New Crystals grace period)
+    18: 6, // T3-T6 (+1 Inventory slot)
+    19: 6, // T3-T6
+    20: 7, // T3-T7 Chapter 2 Milestone
   } as Record<number, number>,
 
-  // === CHAPTER 1 MILESTONE ===
+  // === SPECIAL ORDERS (Level 15+) ===
+  SPECIAL_ORDER_UNLOCK_LEVEL: 15,
+  SPECIAL_ORDER_XP_MULTIPLIER: 2.2,
+  SPECIAL_ORDER_COIN_MULTIPLIER: 2.5,
+
+  // === CHAPTER MILESTONES ===
   CHAPTER_1_MAX_LEVEL: 10,
+  CHAPTER_2_MAX_LEVEL: 20,
   CHAPTER_1_CTA_TEXT: 'Continue Your Journey',
+  CHAPTER_2_CTA_TEXT: 'Continue Your Journey',
 };

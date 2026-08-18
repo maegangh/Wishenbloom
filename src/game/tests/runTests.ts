@@ -345,6 +345,79 @@ console.log('\n[6] Testing Levels 1–10 Player Progression Architecture & Invar
   assert(Array.isArray(migratedProg.state.claimedLevelRewardIds), 'claimedLevelRewardIds is initialized on migrated save');
 }
 
+// TEST SUITE 6: Chapter 2 Progression (Player Levels 11–20)
+console.log('\n[6] Testing Chapter 2 Progression (Player Levels 11–20):');
+{
+  // 1. Level 11: Relic Ciphers
+  const l11 = getLevelProgression(11);
+  assert(l11.unlocks.mechanicName === 'Relic Ciphers', 'Level 11 unlocks Relic Ciphers mechanic');
+  assert(l11.rewards.coins === 350 && l11.rewards.gems === 10, 'Level 11 rewards 350 Coins and 10 Gems');
+
+  // 2. Level 12: Moonstone Causeway
+  const l12 = getLevelProgression(12);
+  assert(l12.unlocks.kingdomAreaId === 'causeway', 'Level 12 unlocks Moonstone Causeway kingdom area');
+  assert(l12.rewards.coins === 400 && l12.rewards.gems === 12, 'Level 12 rewards 400 Coins and 12 Gems');
+
+  // 3. Level 13: Enchanted Textiles & Royal Loom
+  const l13 = getLevelProgression(13);
+  assert(l13.unlocks.generatorId === 'gen_loom_1', 'Level 13 unlocks Royal Loom (gen_loom_1)');
+  assert(l13.unlocks.chainId === 'textiles', 'Level 13 unlocks textiles chain');
+  assert(l13.unlocks.npcId === 'celeste', 'Level 13 introduces Celeste Royal Weaver');
+  assert(getUnlockedChainsForLevel(13).includes('textiles'), 'Level 13 unlocked chains include textiles');
+  assert(!getUnlockedChainsForLevel(12).includes('textiles'), 'Level 12 does not include textiles');
+  assert(Boolean(ITEMS['textile_1'] && ITEMS['textile_8']), 'Textiles chain items T1-T8 exist');
+
+  // 4. Level 14: Tapestry Lore
+  const l14 = getLevelProgression(14);
+  assert(l14.unlocks.mechanicName === 'Artisan Lore', 'Level 14 unlocks Artisan Lore mechanic');
+
+  // 5. Level 15: Special Orders / Royal Commissions
+  const l15 = getLevelProgression(15);
+  assert(l15.unlocks.mechanicName === 'Special Orders', 'Level 15 unlocks Special Orders');
+  assert(l15.rewards.chestItemId === 'chest_golden', 'Level 15 awards Golden Chest');
+  assert(BALANCE.SPECIAL_ORDER_UNLOCK_LEVEL === 15, 'Special orders unlock level constant is 15');
+
+  // Test special order generation
+  const ch2Grid: (BoardItem | null)[][] = [
+    [{ instanceId: 'g1', itemId: 'herb_1', isGenerator: true, generatorId: 'gen_garden_1', tileState: 'normal' }],
+    [{ instanceId: 'g2', itemId: 'potion_1', isGenerator: true, generatorId: 'gen_alchemist_1', tileState: 'normal' }],
+    [{ instanceId: 'g3', itemId: 'textile_1', isGenerator: true, generatorId: 'gen_loom_1', tileState: 'normal' }],
+  ];
+  const specialOrder = generateSafeRandomOrder(ch2Grid, [], 15, []);
+  assert(specialOrder !== null, 'Order generated successfully at Level 15');
+
+  // 6. Level 16: Deep Realm Lore
+  const l16 = getLevelProgression(16);
+  assert(l16.unlocks.mechanicName === 'Deep Realm Lore', 'Level 16 unlocks Deep Realm Lore');
+  assert(l16.rewards.coins === 550, 'Level 16 awards 550 Coins');
+
+  // 7. Level 17: Enchanted Crystals & Arcane Quarry
+  const l17 = getLevelProgression(17);
+  assert(l17.unlocks.generatorId === 'gen_quarry_1', 'Level 17 unlocks Arcane Quarry (gen_quarry_1)');
+  assert(l17.unlocks.chainId === 'crystals', 'Level 17 unlocks crystals & runestones chain');
+  assert(l17.unlocks.npcId === 'gideon', 'Level 17 introduces Gideon Deep Scribe');
+  assert(getUnlockedChainsForLevel(17).includes('crystals'), 'Level 17 unlocked chains include crystals');
+  assert(!getUnlockedChainsForLevel(16).includes('crystals'), 'Level 16 does not include crystals');
+  assert(Boolean(ITEMS['crystal_1'] && ITEMS['crystal_8']), 'Crystals chain items T1-T8 exist');
+
+  // 8. Level 18: Artisan Vault Expansion
+  const l18 = getLevelProgression(18);
+  assert(l18.unlocks.inventorySlotIncrease === 1, 'Level 18 grants 7th inventory slot');
+  assert(l18.rewards.inventorySlotsAdded === 1, 'Level 18 records inventorySlotsAdded');
+
+  // 9. Level 19: Harmonic Convergence
+  const l19 = getLevelProgression(19);
+  assert(l19.unlocks.mechanicName === 'Harmonic Convergence', 'Level 19 unlocks Harmonic Convergence');
+  assert(l19.rewards.coins === 800 && l19.rewards.gems === 25, 'Level 19 awards 800 Coins and 25 Gems');
+
+  // 10. Level 20: Chapter 2 Milestone
+  const l20 = getLevelProgression(20);
+  assert(l20.isChapterMilestone === true, 'Level 20 is marked as Chapter 2 Milestone');
+  assert(l20.rewards.gems === 60, 'Level 20 awards 60 Gems');
+  assert(l20.rewards.chestItemId === 'chest_royal', 'Level 20 awards Royal Chapter Chest');
+  assert(BALANCE.CHAPTER_2_CTA_TEXT === 'Continue Your Journey', 'Chapter 2 CTA text is "Continue Your Journey"');
+}
+
 console.log(`\n========================================`);
 console.log(`RESULTS: ${passedTests}/${totalTests} tests passed (${failedTests} failed)`);
 console.log(`========================================\n`);
