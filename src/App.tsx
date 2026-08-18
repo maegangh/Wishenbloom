@@ -36,6 +36,7 @@ export default function App() {
     restoreKingdomStage,
     claimQuest,
     claimDiscoveryReward,
+    updateSettings,
     devAddCoins,
     devAddGems,
     devRefillEnergy,
@@ -170,7 +171,7 @@ export default function App() {
         {showSettings && (
           <SettingsModal
             settings={state.settings}
-            onUpdateSettings={(s) => {}}
+            onUpdateSettings={updateSettings}
             onResetGame={devResetSave}
             onClose={() => setShowSettings(false)}
           />

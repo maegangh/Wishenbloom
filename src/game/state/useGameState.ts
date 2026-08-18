@@ -911,6 +911,10 @@ export function useGameState() {
     setSelectedCell(null);
   };
 
+  const updateSettings = (newSettings: GameState['settings']) => {
+    setState((prev) => ({ ...prev, settings: newSettings }));
+  };
+
   return {
     state,
     selectedCell,
@@ -934,6 +938,7 @@ export function useGameState() {
     claimQuest,
     claimDiscoveryReward,
     grantXP,
+    updateSettings,
     // Dev helpers
     devAddCoins,
     devAddGems,
