@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
-import { Sparkles, ArrowDown, ChevronRight, X } from 'lucide-react';
+import React from 'react';
+import { Sparkles, ChevronRight, X } from 'lucide-react';
 import { NpcAvatar } from './NpcAvatar';
 
 interface TutorialOverlayProps {
+  currentStep: number;
+  onNext: () => void;
   onDismiss: () => void;
 }
 
-export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onDismiss }) => {
-  const [step, setStep] = useState(0);
-
+export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
+  currentStep,
+  onNext,
+  onDismiss,
+}) => {
   const steps = [
     {
       title: 'Welcome to Wishenbloom!',
@@ -37,22 +41,16 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onDismiss }) =
     },
   ];
 
-  const current = steps[step];
-
-  const handleNext = () => {
-    if (step < steps.length - 1) {
-      setStep(step + 1);
-    } else {
-      onDismiss();
-    }
-  };
+  const stepIndex = Math.min(steps.length - 1, Math.max(0, currentStep));
+  const current = steps[stepIndex];
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end p-4 bg-slate-950/75 backdrop-blur-[2px] select-none animate-in fade-in duration-200">
       <div className="w-full max-w-md mx-auto bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-5 shadow-2xl text-white relative">
         <button
           onClick={onDismiss}
-          className="absolute top-4 right-4 p-1 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+          className="absolute top-4 right-4 p-1 rounded-full bg-slate-800 text-slate-400 hover:text-white transition-colors"
+          title="Skip tutorial"
         >
           <X className="w-4 h-4" />
         </button>
@@ -62,7 +60,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onDismiss }) =
           <div>
             <div className="flex items-center gap-1.5 text-amber-400 text-xs font-black uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Tutorial Guide ({step + 1}/{steps.length})</span>
+              <span>Tutorial Guide ({stepIndex + 1}/{steps.length})</span>
             </div>
             <h3 className="text-base font-black text-white">{current.title}</h3>
           </div>
@@ -75,16 +73,16 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onDismiss }) =
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={onDismiss}
-            className="text-xs text-slate-400 font-bold px-3 py-2 hover:text-slate-200"
+            className="text-xs text-slate-400 font-bold px-3 py-2 hover:text-slate-200 transition-colors cursor-pointer"
           >
             Skip Tutorial
           </button>
 
           <button
-            onClick={handleNext}
+            onClick={onNext}
             className="py-2.5 px-5 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black text-xs uppercase tracking-wider shadow-lg shadow-amber-500/30 flex items-center gap-1.5 cursor-pointer"
           >
-            <span>{step === steps.length - 1 ? 'Start Merging!' : 'Next'}</span>
+            <span>{stepIndex === steps.length - 1 ? 'Start Merging!' : 'Next'}</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>

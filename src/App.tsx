@@ -26,6 +26,7 @@ export default function App() {
     discoveryPopupItem,
     setDiscoveryPopupItem,
     tapGenerator,
+    upgradeGenerator,
     moveOrMergeItem,
     sellItem,
     useConsumable,
@@ -36,6 +37,8 @@ export default function App() {
     restoreKingdomStage,
     claimQuest,
     claimDiscoveryReward,
+    advanceTutorial,
+    dismissTutorial,
     updateSettings,
     devAddCoins,
     devAddGems,
@@ -50,7 +53,6 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showDev, setShowDev] = useState(false);
   const [showEnergyShop, setShowEnergyShop] = useState(false);
-  const [showTutorial, setShowTutorial] = useState(state.isTutorialActive);
 
   // Check badges for unclaimed rewards
   const hasUnclaimedQuests = state.activeQuests.some((q) => q.isCompleted && !q.isClaimed);
@@ -136,11 +138,13 @@ export default function App() {
             selectedCell={selectedCell}
             grid={state.grid}
             inventory={state.inventory}
+            playerCoins={state.coins}
             onClose={() => setSelectedCell(null)}
             onSellItem={sellItem}
             onUseConsumable={useConsumable}
             onStoreInInventory={storeInInventory}
             onPopBubble={popBubble}
+            onUpgradeGenerator={upgradeGenerator}
           />
         )}
 
@@ -203,9 +207,11 @@ export default function App() {
           />
         )}
 
-        {showTutorial && (
+        {state.isTutorialActive && (
           <TutorialOverlay
-            onDismiss={() => setShowTutorial(false)}
+            currentStep={state.tutorialStep}
+            onNext={() => advanceTutorial()}
+            onDismiss={dismissTutorial}
           />
         )}
       </div>

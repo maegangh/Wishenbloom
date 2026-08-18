@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Sparkles, Lock, Timer } from 'lucide-react';
+import { Lock, Timer } from 'lucide-react';
 import { BoardItem } from '../types';
 import { ITEMS } from '../data/items';
-import { GENERATORS } from '../data/generators';
 import { ItemIcon } from './ItemIcon';
+import { checkMergeValidity } from '../logic/mergeLogic';
+import { getBubbleRemainingSeconds } from '../logic/bubbleLogic';
+import { getGeneratorCooldownRemaining } from '../logic/generatorLogic';
 
 interface BoardGridProps {
   grid: (BoardItem | null)[][];
@@ -71,13 +73,13 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
 
   // Pointer Down (Mouse / Touch / Stylus)
   const handlePointerDown = (e: React.PointerEvent, row: number, col: number) => {
-    const item = grid[row][col];
+    const item = grid[row]?.[col];
     if (!item) {
       onSelectCell(null);
       return;
     }
 
-    // If it's a bubble item, tap to select or pop
+    // If it's a bubble item, tap to select or view
     if (item.tileState === 'bubble') {
       onSelectCell({ row, col });
       return;
@@ -135,13 +137,7 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
       if (item.isGenerator) {
         onTapGenerator(fromRow, fromCol);
       } else {
-        const itemDef = ITEMS[item.itemId];
-        if (itemDef?.isConsumable && itemDef.consumableType !== 'chest') {
-          // Select or allow tap
-          onSelectCell({ row: fromRow, col: fromCol });
-        } else {
-          onSelectCell({ row: fromRow, col: fromCol });
-        }
+        onSelectCell({ row: fromRow, col: fromCol });
       }
     }
 
@@ -176,20 +172,17 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
               dragState.hoverCol === cIdx &&
               (dragState.fromRow !== rIdx || dragState.fromCol !== cIdx);
 
-            // Calculate if hover is a valid merge
+            // Calculate if hover is a valid merge using unified merge validity check
             let isMergeHover = false;
             if (isHoverTarget && cell && dragState?.item) {
-              const sourceItem = dragState.item;
-              const sourceDef = ITEMS[sourceItem.itemId];
-              if (
-                sourceItem.itemId === cell.itemId &&
-                !sourceItem.isGenerator &&
-                !cell.isGenerator &&
-                sourceDef?.mergeResultId
-              ) {
+              const mergeCheck = checkMergeValidity(dragState.item, cell);
+              if (mergeCheck.canMerge) {
                 isMergeHover = true;
               }
             }
+
+            const bubbleSeconds = cell?.tileState === 'bubble' ? getBubbleRemainingSeconds(cell) : 0;
+            const cooldownSeconds = cell?.isGenerator ? getGeneratorCooldownRemaining(cell) : 0;
 
             return (
               <div
@@ -217,6 +210,14 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
                       size="88%"
                     />
 
+                    {/* Generator Cooldown Indicator */}
+                    {cell.isGenerator && cooldownSeconds > 0 && (
+                      <div className="absolute inset-0 bg-slate-950/70 rounded-xl flex flex-col items-center justify-center border border-amber-600/40">
+                        <Timer className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+                        <span className="text-[9px] font-black text-amber-200">{cooldownSeconds}s</span>
+                      </div>
+                    )}
+
                     {/* Dusty / Cobweb Overlay */}
                     {cell.tileState === 'dusty' && (
                       <div className="absolute inset-0 bg-slate-950/60 rounded-xl flex flex-col items-center justify-center border border-amber-700/50">
@@ -225,12 +226,17 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
                       </div>
                     )}
 
-                    {/* Bubble Overlay with Timer */}
+                    {/* Bubble Overlay with Dynamic Timer */}
                     {cell.tileState === 'bubble' && (
                       <div className="absolute inset-0 rounded-xl bg-purple-500/20 border-2 border-purple-400/80 animate-pulse flex flex-col items-center justify-center shadow-lg shadow-purple-500/30 backdrop-blur-[1px]">
-                        <span className="text-[10px] font-black text-purple-200 bg-purple-950/80 px-1 rounded-full border border-purple-400/50">
+                        <span className="text-[9px] font-black text-purple-200 bg-purple-950/85 px-1 rounded-full border border-purple-400/50">
                           💎 {cell.bubblePrice || 2}
                         </span>
+                        {bubbleSeconds > 0 && (
+                          <span className="text-[8px] font-bold text-amber-300 bg-slate-950/80 px-1 rounded-full mt-0.5">
+                            {bubbleSeconds}s
+                          </span>
+                        )}
                       </div>
                     )}
 

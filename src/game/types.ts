@@ -64,6 +64,7 @@ export interface BoardItem {
   bubblePrice?: number;
   dustyMergeCount?: number;
   lastTappedAt?: number;
+  cooldownUntil?: number; // timestamp when generator cooldown finishes
 }
 
 export interface BoardTile {
@@ -196,6 +197,7 @@ export interface GameState {
   settings: PlayerSettings;
   stats: GameStats;
 
-  // Timestamps
+  // Timestamps & Versioning
   lastSavedAt: number;
+  schemaVersion?: number;
 }
