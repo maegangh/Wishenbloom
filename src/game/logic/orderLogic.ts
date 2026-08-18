@@ -2,6 +2,7 @@ import { BoardItem, NPCOrder, ItemChainId } from '../types';
 import { NPCS } from '../data/npcs';
 import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
+import { BALANCE } from '../data/balance';
 import { GRID_ROWS, GRID_COLS } from './boardLogic';
 
 interface ProduciblePool {
@@ -38,9 +39,10 @@ export function getProducibleItemPools(
     }
   }
 
-  // Tier cap tuned for early player experience
+  // Tier cap tuned for early player experience from centralized balance
   const levelTierCap =
-    playerLevel <= 2 ? 2 : playerLevel <= 4 ? 3 : playerLevel <= 7 ? 4 : 5;
+    BALANCE.ORDER_MAX_TIER_BY_LEVEL[playerLevel] ||
+    (playerLevel <= 2 ? 2 : playerLevel <= 4 ? 3 : playerLevel <= 7 ? 4 : 5);
 
   // If for any rare reason no generators are found, default to starter herbs
   if (ownedGeneratorIds.size === 0) {
@@ -136,7 +138,7 @@ export function getProducibleItemPools(
     });
   }
 
-  // 6. Ancient Wishing Tree -> Treasures
+  // 6. Royal Reliquary -> Treasures
   const hasTree = Array.from(ownedGeneratorIds).some((id) => id.startsWith('gen_tree'));
   if (hasTree) {
     pools.push({

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, Trophy, Zap, Coins, Gem, ArrowRight, BookOpen, Hammer, Crown, Feather, Archive } from 'lucide-react';
 import { LevelProgressionDef, LevelRewards } from '../data/progression';
+import { BALANCE } from '../data/balance';
 import { NpcAvatar } from './NpcAvatar';
 
 interface LevelUpModalProps {
@@ -167,7 +168,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
               : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-amber-500/30'
           }`}
         >
-          {isChapter10 ? 'Awaken Chapter 2!' : 'Claim & Continue Merging'}
+          {isChapter10 ? BALANCE.CHAPTER_1_CTA_TEXT : 'Claim & Continue Merging'}
         </button>
       </div>
     </div>

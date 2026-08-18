@@ -240,7 +240,7 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
       'Princess Aurelia discovers a tarnished royal emblem in the archives. A dark revelation emerges: the Bloom did not fade by natural decay—it was deliberately sealed by an ancient decree.',
     unlocks: {
       mechanicName: 'Royal Relic Lore',
-      mechanicDescription: 'Uncover royal antiquities and prepare for the awakening of the Ancient Wishing Tree.',
+      mechanicDescription: 'Uncover royal antiquities and prepare for the awakening of the Royal Reliquary.',
     },
     rewards: {
       coins: 600,
@@ -255,14 +255,14 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     title: 'Chapter 1 Milestone: The Bloom Reborn',
     subtitle: 'The Living Heart of Wishenbloom',
     storySnippet:
-      'The entire central realm rejoices! The Sunfire Plaza, Conservatory, Spire, and Forge resonate in harmony. The primordial Wishing Tree awakens, radiating energy across the kingdom and opening pathways to the untamed outer realms!',
+      'The entire central realm rejoices! The Sunfire Plaza, Conservatory, Spire, and Forge resonate in harmony. The Royal Reliquary awakens, revealing long-lost ceremonial regalia, coin tributes, and energy caches from Wishenbloom\'s golden age!',
     unlocks: {
       generatorId: 'gen_tree_1',
-      generatorName: 'Ancient Wishing Tree',
+      generatorName: 'Royal Reliquary',
       chainId: 'treasures',
       chainName: 'Royal Treasures & Energy',
-      mechanicName: 'Primordial Wishing Tree',
-      mechanicDescription: 'The supreme landmark generator produces high-tier coin bags, energy orbs, and rare artifacts!',
+      mechanicName: 'Royal Reliquary',
+      mechanicDescription: 'The supreme landmark generator produces high-tier coin bags, energy orbs, and rare royal artifacts!',
     },
     rewards: {
       coins: 800,

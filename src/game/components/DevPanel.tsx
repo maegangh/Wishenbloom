@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { X, Wrench, Plus, RefreshCw, Zap, Coins, Gem, Sparkles, Trash2 } from 'lucide-react';
+import { X, Wrench, Plus, RefreshCw, Zap, Coins, Gem, Sparkles, Trash2, Activity, LayoutGrid, Award, BookOpen } from 'lucide-react';
 import { ITEMS } from '../data/items';
+import { GameState } from '../types';
+import { getLevelProgression, getUnlockedChainsForLevel } from '../data/progression';
 
 interface DevPanelProps {
+  gameState?: GameState;
   onAddCoins: (amt?: number) => void;
   onAddGems: (amt?: number) => void;
   onRefillEnergy: () => void;
@@ -14,6 +17,7 @@ interface DevPanelProps {
 }
 
 export const DevPanel: React.FC<DevPanelProps> = ({
+  gameState,
   onAddCoins,
   onAddGems,
   onRefillEnergy,
@@ -26,6 +30,22 @@ export const DevPanel: React.FC<DevPanelProps> = ({
   const [selectedSpawnItem, setSelectedSpawnItem] = useState('herb_3');
   const itemList = Object.values(ITEMS);
 
+  // Telemetry metrics
+  const totalCells = (gameState?.grid.length || 9) * (gameState?.grid[0]?.length || 7);
+  const occupiedCells = gameState
+    ? gameState.grid.flatMap((r) => r).filter((c) => c !== null).length
+    : 0;
+  const freeCells = totalCells - occupiedCells;
+  const occupancyPercent = Math.round((occupiedCells / totalCells) * 100);
+
+  const generatorCount = gameState
+    ? gameState.grid.flatMap((r) => r).filter((c) => c?.isGenerator).length +
+      gameState.inventory.filter((c) => c?.isGenerator).length
+    : 1;
+
+  const currentLevelDef = gameState ? getLevelProgression(gameState.level) : null;
+  const unlockedChains = gameState ? getUnlockedChainsForLevel(gameState.level) : ['herbs'];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md select-none animate-in fade-in duration-200">
       <div className="w-full max-w-sm max-h-[85vh] overflow-y-auto bg-slate-900 border border-amber-500/50 rounded-3xl p-5 shadow-2xl text-white">
@@ -37,11 +57,58 @@ export const DevPanel: React.FC<DevPanelProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {/* Live Early Game Balance & Telemetry Panel */}
+        {gameState && (
+          <div className="py-3 border-b border-slate-800 space-y-2">
+            <div className="flex items-center gap-1.5 text-cyan-400 text-xs font-black uppercase tracking-wider">
+              <Activity className="w-3.5 h-3.5" />
+              <span>Balance & Economy Telemetry</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-left">
+              {/* Level & XP */}
+              <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                <span className="text-[10px] text-slate-400 block font-bold">Level & XP</span>
+                <span className="text-xs font-black text-yellow-300">
+                  Lv.{gameState.level} ({gameState.xp}/{currentLevelDef?.xpRequired || 0} XP)
+                </span>
+              </div>
+
+              {/* Board Occupancy */}
+              <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                <span className="text-[10px] text-slate-400 block font-bold">Board Pressure</span>
+                <span className="text-xs font-black text-emerald-300">
+                  {occupiedCells}/63 ({occupancyPercent}%)
+                </span>
+                <span className="text-[9px] text-slate-400 block font-medium">
+                  {freeCells} free tiles
+                </span>
+              </div>
+
+              {/* Generators & Chains */}
+              <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                <span className="text-[10px] text-slate-400 block font-bold">Generators</span>
+                <span className="text-xs font-black text-purple-300">
+                  {generatorCount} Active ({unlockedChains.length} Chains)
+                </span>
+              </div>
+
+              {/* Compendium & Discoveries */}
+              <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
+                <span className="text-[10px] text-slate-400 block font-bold">Discoveries</span>
+                <span className="text-xs font-black text-cyan-300">
+                  {gameState.discoveredItemIds.length}/{Object.keys(ITEMS).length} Items
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Quick Resource Actions */}
         <div className="py-3 space-y-2">

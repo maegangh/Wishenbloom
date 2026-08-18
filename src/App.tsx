@@ -184,6 +184,7 @@ export default function App() {
 
         {showDev && (
           <DevPanel
+            gameState={state}
             onAddCoins={devAddCoins}
             onAddGems={devAddGems}
             onRefillEnergy={devRefillEnergy}

@@ -511,11 +511,21 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
       case 'gen_tree':
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
-            <path d="M44 85 L46 55 L54 55 L56 85 Z" fill="#78350f" />
-            <circle cx="50" cy="38" r="28" fill="#eab308" />
-            <circle cx="36" cy="42" r="18" fill="#ca8a04" />
-            <circle cx="64" cy="42" r="18" fill="#facc15" />
-            <circle cx="50" cy="32" r="8" fill="#ffffff" opacity="0.8" />
+            {/* Reliquary Gold Base */}
+            <rect x="20" y="70" width="60" height="18" rx="4" fill="#ca8a04" stroke="#78350f" strokeWidth="2.5" />
+            <rect x="25" y="65" width="50" height="8" rx="2" fill="#eab308" />
+            {/* Ornate Gold Pillars */}
+            <rect x="24" y="32" width="10" height="34" rx="2" fill="#facc15" stroke="#a16207" strokeWidth="1.5" />
+            <rect x="66" y="32" width="10" height="34" rx="2" fill="#facc15" stroke="#a16207" strokeWidth="1.5" />
+            {/* Royal Velvet Relic Chamber */}
+            <path d="M 34 32 Q 50 18 66 32 L 66 65 L 34 65 Z" fill="#701a75" stroke="#a16207" strokeWidth="2" />
+            {/* Gilded Crown / Sun Crest inside Chamber */}
+            <polygon points="50,26 55,38 62,32 58,46 42,46 38,32 45,38" fill="#fde047" stroke="#ca8a04" strokeWidth="1" />
+            <circle cx="50" cy="52" r="5" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+            {/* Top Royal Dome & Cross Finial */}
+            <path d="M 28 32 Q 50 12 72 32 Z" fill="#eab308" stroke="#a16207" strokeWidth="2" />
+            <line x1="50" y1="6" x2="50" y2="16" stroke="#facc15" strokeWidth="3" strokeLinecap="round" />
+            <line x1="45" y1="10" x2="55" y2="10" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
           </svg>
         );
 

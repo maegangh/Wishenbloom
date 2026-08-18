@@ -326,15 +326,15 @@ export const GENERATORS: Record<string, GeneratorDef> = {
     glowColor: 'rgba(190, 24, 93, 0.7)',
   },
 
-  // 6. Ancient Wishing Tree (Treasures & Energy)
+  // 6. Royal Reliquary (Royal Antiquities & Energy)
   gen_tree_1: {
     id: 'gen_tree_1',
-    name: 'Ancient Wishing Tree',
+    name: 'Royal Reliquary',
     level: 1,
     maxLevel: 1,
     energyCost: 2,
     cooldownMs: 0,
-    description: 'Drop magical coin bags and shimmering energy orbs.',
+    description: 'Recovers tarnished royal insignia, ceremonial artifacts, coin bags, and shimmering energy orbs.',
     drops: [
       { itemId: 'coin_item_1', weight: 40 },
       { itemId: 'coin_item_2', weight: 25 },
