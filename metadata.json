@@ -1,0 +1,6 @@
+{
+  "name": "Mergevale",
+  "description": "A cozy 2D fantasy merge-2 adventure game with magical item chains, generators, NPC orders, kingdom restoration, and discovery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
