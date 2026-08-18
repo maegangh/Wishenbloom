@@ -188,6 +188,7 @@ export interface GameState {
   // Discovery Book
   discoveredItemIds: string[];
   claimedDiscoveryRewardIds: string[];
+  claimedLevelRewardIds?: number[];
 
   // Tutorial
   tutorialStep: number;

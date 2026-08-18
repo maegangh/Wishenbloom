@@ -2,23 +2,25 @@ import { GameState, BoardItem } from '../types';
 import { INITIAL_ORDERS } from '../data/npcs';
 import { INITIAL_KINGDOM_AREAS } from '../data/kingdom';
 import { INITIAL_QUESTS } from '../data/quests';
+import { LEVEL_PROGRESSION } from '../data/progression';
 import { GRID_ROWS, GRID_COLS } from './boardLogic';
 import { resolveExpiredBubbles } from './bubbleLogic';
 
 export const PRIMARY_STORAGE_KEY = 'wishenbloom_save_v1';
 export const LEGACY_STORAGE_KEY = 'mergevale_save_v1'; // Legacy key for backward compatibility
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 export const ENERGY_RECHARGE_SECONDS = 120; // 1 energy every 2 minutes
 
 /**
- * Creates a brand new starting state with all default fields.
+ * Creates a brand new starting state with all default fields for Level 1 player.
+ * In a fresh game, only the Enchanted Garden (gen_garden_1) is available.
  */
 export function createDefaultInitialState(): GameState {
   const grid: (BoardItem | null)[][] = Array(GRID_ROWS)
     .fill(null)
     .map(() => Array(GRID_COLS).fill(null));
 
-  // Initial starter generators
+  // Initial starter generator: Enchanted Garden only
   grid[0][0] = {
     instanceId: 'item_gen_garden',
     itemId: 'herb_1',
@@ -27,19 +29,9 @@ export function createDefaultInitialState(): GameState {
     tileState: 'normal',
   };
 
-  grid[0][1] = {
-    instanceId: 'item_gen_alchemist',
-    itemId: 'potion_1',
-    isGenerator: true,
-    generatorId: 'gen_alchemist_1',
-    tileState: 'normal',
-  };
-
-  // Pre-placed starter items
+  // Pre-placed starter items (Herbalism focus for Level 1)
   grid[2][2] = { instanceId: 'init_herb_1', itemId: 'herb_1', tileState: 'normal' };
   grid[2][3] = { instanceId: 'init_herb_2', itemId: 'herb_1', tileState: 'normal' };
-  grid[3][2] = { instanceId: 'init_potion_1', itemId: 'potion_1', tileState: 'normal' };
-  grid[3][3] = { instanceId: 'init_potion_2', itemId: 'potion_1', tileState: 'normal' };
   grid[4][4] = { instanceId: 'init_dusty_herb', itemId: 'herb_1', tileState: 'dusty' };
   grid[4][5] = { instanceId: 'init_chest_1', itemId: 'chest_wooden', tileState: 'normal' };
 
@@ -47,7 +39,7 @@ export function createDefaultInitialState(): GameState {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     level: 1,
     xp: 0,
-    xpToNextLevel: 50,
+    xpToNextLevel: LEVEL_PROGRESSION[1]?.xpRequired || 40,
     coins: 300,
     gems: 20,
     energy: 100,
@@ -62,8 +54,9 @@ export function createDefaultInitialState(): GameState {
     activeQuests: INITIAL_QUESTS,
     kingdomAreas: INITIAL_KINGDOM_AREAS,
 
-    discoveredItemIds: ['herb_1', 'potion_1', 'chest_wooden'],
+    discoveredItemIds: ['herb_1', 'chest_wooden'],
     claimedDiscoveryRewardIds: [],
+    claimedLevelRewardIds: [],
 
     tutorialStep: 0,
     isTutorialActive: true,
@@ -113,6 +106,10 @@ export function hydrateAndMigrateSave(
     }
 
     const defaultState = createDefaultInitialState();
+    const playerLevel = typeof parsed.level === 'number' && parsed.level > 0 ? parsed.level : 1;
+    const maxInventorySlots = typeof parsed.maxInventorySlots === 'number'
+      ? parsed.maxInventorySlots
+      : playerLevel >= 6 ? 6 : 5;
 
     // 1. Grid validation (Must be 9 rows x 7 cols)
     let validatedGrid: (BoardItem | null)[][] = defaultState.grid;
@@ -147,18 +144,15 @@ export function hydrateAndMigrateSave(
     const bubbleCheck = resolveExpiredBubbles(validatedGrid, now);
     validatedGrid = bubbleCheck.grid;
 
-    // 3. Inventory validation
-    let validatedInventory: (BoardItem | null)[] = defaultState.inventory;
+    // 3. Inventory validation (respects slot expansion)
+    let validatedInventory: (BoardItem | null)[] = Array(maxInventorySlots).fill(null);
     if (Array.isArray(parsed.inventory)) {
-      validatedInventory = Array(5)
-        .fill(null)
-        .map((_, idx) => {
-          const invItem = parsed.inventory[idx];
-          if (invItem && typeof invItem === 'object' && typeof invItem.itemId === 'string') {
-            return invItem;
-          }
-          return null;
-        });
+      for (let idx = 0; idx < maxInventorySlots; idx++) {
+        const invItem = parsed.inventory[idx];
+        if (invItem && typeof invItem === 'object' && typeof invItem.itemId === 'string') {
+          validatedInventory[idx] = invItem;
+        }
+      }
     }
 
     // 4. Currencies & Offline Energy Calculation
@@ -190,11 +184,14 @@ export function hydrateAndMigrateSave(
       });
     }
 
+    const defaultProg = LEVEL_PROGRESSION[playerLevel];
+    const defaultXpToNext = defaultProg?.xpRequired || Math.round(50 * Math.pow(1.35, playerLevel - 1));
+
     const hydrated: GameState = {
       schemaVersion: CURRENT_SCHEMA_VERSION,
-      level: typeof parsed.level === 'number' && parsed.level > 0 ? parsed.level : 1,
+      level: playerLevel,
       xp: typeof parsed.xp === 'number' ? parsed.xp : 0,
-      xpToNextLevel: typeof parsed.xpToNextLevel === 'number' ? parsed.xpToNextLevel : 50,
+      xpToNextLevel: typeof parsed.xpToNextLevel === 'number' ? parsed.xpToNextLevel : defaultXpToNext,
       coins: typeof parsed.coins === 'number' ? parsed.coins : 300,
       gems: typeof parsed.gems === 'number' ? parsed.gems : 20,
       energy,
@@ -203,7 +200,7 @@ export function hydrateAndMigrateSave(
 
       grid: validatedGrid,
       inventory: validatedInventory,
-      maxInventorySlots: 5,
+      maxInventorySlots,
 
       activeOrders: Array.isArray(parsed.activeOrders) && parsed.activeOrders.length > 0
         ? parsed.activeOrders
@@ -215,6 +212,7 @@ export function hydrateAndMigrateSave(
 
       discoveredItemIds: Array.isArray(parsed.discoveredItemIds) ? parsed.discoveredItemIds : defaultState.discoveredItemIds,
       claimedDiscoveryRewardIds: Array.isArray(parsed.claimedDiscoveryRewardIds) ? parsed.claimedDiscoveryRewardIds : [],
+      claimedLevelRewardIds: Array.isArray(parsed.claimedLevelRewardIds) ? parsed.claimedLevelRewardIds : [],
 
       tutorialStep: typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep : 0,
       isTutorialActive: typeof parsed.isTutorialActive === 'boolean' ? parsed.isTutorialActive : true,

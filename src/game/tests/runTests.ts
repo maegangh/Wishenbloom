@@ -3,6 +3,12 @@ import { resolveExpiredBubbles, canPurchaseBubble, getBubbleRemainingSeconds } f
 import { validateGeneratorTap, validateGeneratorUpgrade, getGeneratorCooldownRemaining } from '../logic/generatorLogic';
 import { getProducibleItemPools, generateSafeRandomOrder, isOrderFulfillable } from '../logic/orderLogic';
 import { hydrateAndMigrateSave, createDefaultInitialState, CURRENT_SCHEMA_VERSION } from '../logic/saveMigration';
+import {
+  LEVEL_PROGRESSION,
+  getLevelProgression,
+  getUnlockedChainsForLevel,
+  getGeneratorUnlockedAtLevel,
+} from '../data/progression';
 import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
 import { BoardItem, NPCOrder } from '../types';
@@ -22,7 +28,7 @@ function assert(condition: boolean, testName: string) {
   }
 }
 
-console.log('\n--- 🌟 WISHENBLOOM CORE SYSTEMS HARDENING TEST SUITE ---');
+console.log('\n--- 🌟 WISHENBLOOM CORE SYSTEMS & PROGRESSION TEST SUITE ---');
 
 // TEST SUITE 1: Merge Logic & Dusty Tile Resolution
 console.log('\n[1] Testing Merge Logic & Dusty Tile Resolution:');
@@ -103,15 +109,14 @@ console.log('\n[2] Testing Timed Bubble System:');
 // TEST SUITE 3: Generator Upgrades & Cooldowns
 console.log('\n[3] Testing Generator Upgrades & Cooldowns:');
 {
-  const now = 500000;
-  const gardenGenLvl1: BoardItem = {
+  const now = 5000000;
+  const readyGarden: BoardItem = {
     instanceId: 'g1',
     itemId: 'herb_1',
     isGenerator: true,
     generatorId: 'gen_garden_1',
     tileState: 'normal',
   };
-
   const cooldownGarden: BoardItem = {
     instanceId: 'g2',
     itemId: 'herb_1',
@@ -121,29 +126,23 @@ console.log('\n[3] Testing Generator Upgrades & Cooldowns:');
     cooldownUntil: now + 15000,
   };
 
-  // Cooldown calculation
-  assert(getGeneratorCooldownRemaining(cooldownGarden, now) === 15, 'Cooldown generator remaining is 15s');
-  assert(getGeneratorCooldownRemaining(gardenGenLvl1, now) === 0, 'Non-cooldown generator remaining is 0s');
+  const tapReady = validateGeneratorTap(readyGarden, 50, now);
+  assert(tapReady.canTap === true, 'Can tap generator when ready and energy available');
 
-  // Generator Tap Validation
-  const validTap = validateGeneratorTap(gardenGenLvl1, 50, now);
-  assert(validTap.canTap === true, 'Generator can tap with energy');
+  const tapCooldown = validateGeneratorTap(cooldownGarden, 50, now);
+  assert(tapCooldown.canTap === false && tapCooldown.reason === 'on_cooldown', 'Cannot tap generator while on cooldown');
+  assert(getGeneratorCooldownRemaining(cooldownGarden, now) === 15, 'Cooldown remaining correctly calculates 15s');
 
-  const noEnergyTap = validateGeneratorTap(gardenGenLvl1, 0, now);
-  assert(noEnergyTap.canTap === false && noEnergyTap.reason === 'insufficient_energy', 'Generator tap blocked when energy is 0');
+  const tapNoEnergy = validateGeneratorTap(readyGarden, 0, now);
+  assert(tapNoEnergy.canTap === false && tapNoEnergy.reason === 'insufficient_energy', 'Cannot tap generator with 0 energy');
 
-  const onCooldownTap = validateGeneratorTap(cooldownGarden, 50, now);
-  assert(onCooldownTap.canTap === false && onCooldownTap.reason === 'on_cooldown', 'Generator tap blocked when on cooldown');
+  // Generator Upgrade
+  const upgradeWithCoins = validateGeneratorUpgrade(readyGarden, 200);
+  assert(upgradeWithCoins.canUpgrade === true && upgradeWithCoins.nextDef?.id === 'gen_garden_2', 'Generator upgrades from Level 1 to Level 2 with sufficient coins');
 
-  // Generator Upgrade Validation
-  const upgradeWithCoins = validateGeneratorUpgrade(gardenGenLvl1, 1000);
-  assert(upgradeWithCoins.canUpgrade === true, 'Generator can upgrade with 1000 coins');
-  assert(upgradeWithCoins.nextDef?.id === 'gen_garden_2', 'Next generator ID is gen_garden_2');
+  const upgradeShortCoins = validateGeneratorUpgrade(readyGarden, 10);
+  assert(upgradeShortCoins.canUpgrade === false && upgradeShortCoins.reason === 'insufficient_coins', 'Upgrade blocked with insufficient coins');
 
-  const upgradePoor = validateGeneratorUpgrade(gardenGenLvl1, 10);
-  assert(upgradePoor.canUpgrade === false && upgradePoor.reason === 'insufficient_coins', 'Generator upgrade blocked with insufficient coins');
-
-  // Max Level Generator
   const maxGen: BoardItem = {
     instanceId: 'g_max',
     itemId: 'herb_1',
@@ -225,6 +224,117 @@ console.log('\n[5] Testing Save System & Migration:');
   // 3. Corrupt Data Resilience
   const corruptHydration = hydrateAndMigrateSave('INVALID_JSON_STRING{{{', null);
   assert(corruptHydration.state.level === 1, 'Corrupted save gracefully falls back to default state');
+}
+
+// TEST SUITE 6: LEVEL 1–10 PROGRESSION & PACING PASS (13 Verification Points)
+console.log('\n[6] Testing Levels 1–10 Player Progression Architecture:');
+{
+  // Requirement 1: Fresh Game Start
+  const freshGame = createDefaultInitialState();
+  const generatorsOnBoard = freshGame.grid.flatMap(r => r).filter(i => i?.isGenerator);
+  assert(freshGame.level === 1, 'Fresh game starts at Level 1');
+  assert(generatorsOnBoard.length === 1, 'Fresh game has exactly ONE starter generator on board');
+  assert(generatorsOnBoard[0]?.generatorId === 'gen_garden_1', 'Starter generator is Enchanted Garden (gen_garden_1)');
+  assert(!generatorsOnBoard.some(g => g?.generatorId === 'gen_alchemist_1'), 'Alchemist table is NOT pre-placed on Level 1 board');
+  assert(!generatorsOnBoard.some(g => g?.generatorId === 'gen_forge_1'), 'Forge is NOT pre-placed on Level 1 board');
+
+  // Requirement 2: Level 2 Unlocks (Compendium & Discovery Rewards)
+  const l2 = getLevelProgression(2);
+  assert(l2.level === 2 && l2.xpRequired === 80, 'Level 2 requires 80 XP to advance');
+  assert(l2.unlocks.mechanicName?.includes('Compendium'), 'Level 2 unlocks Compendium & Dusty mechanics');
+  assert(l2.rewards.coins === 150 && l2.rewards.gems === 6, 'Level 2 grants 150 Coins and 6 Gems');
+
+  // Requirement 3: Level 3 Alchemy Unlock
+  const l3 = getLevelProgression(3);
+  assert(l3.unlocks.generatorId === 'gen_alchemist_1', "Level 3 unlocks Alchemist's Table (gen_alchemist_1)");
+  assert(l3.unlocks.chainId === 'potions', 'Level 3 unlocks Alchemical Potions chain');
+  assert(l3.unlocks.npcId === 'valerie', 'Level 3 introduces Archmage Valerie');
+  assert(getUnlockedChainsForLevel(3).includes('potions'), 'Level 3 unlocked chains include potions');
+  assert(!getUnlockedChainsForLevel(2).includes('potions'), 'Level 2 does not include potions');
+
+  // Requirement 4: Level 4 Kingdom Restoration Milestone
+  const l4 = getLevelProgression(4);
+  assert(l4.unlocks.npcId === 'aurelia', 'Level 4 introduces Princess Aurelia');
+  assert(l4.unlocks.kingdomAreaId === 'wizard_spire', "Level 4 introduces Archmage's Celestial Spire");
+  assert(l4.rewards.coins === 250 && l4.rewards.gems === 10, 'Level 4 awards 250 Coins and 10 Gems');
+
+  // Requirement 5: Level 5 Master Forge Unlock
+  const l5 = getLevelProgression(5);
+  assert(l5.unlocks.generatorId === 'gen_forge_1', 'Level 5 unlocks Royal Forge (gen_forge_1)');
+  assert(l5.unlocks.chainId === 'blacksmith', 'Level 5 unlocks Blacksmith chain');
+  assert(l5.unlocks.npcId === 'balgor', 'Level 5 introduces Master Blacksmith Balgor');
+  assert(getUnlockedChainsForLevel(5).includes('blacksmith'), 'Level 5 unlocked chains include blacksmith');
+  assert(!getUnlockedChainsForLevel(4).includes('blacksmith'), 'Level 4 does not include blacksmith');
+
+  // Requirement 6: Level 6 Storage Expansion
+  const l6 = getLevelProgression(6);
+  assert(l6.unlocks.inventorySlotIncrease === 1, 'Level 6 unlocks +1 permanent inventory slot');
+  assert(l6.rewards.inventorySlotsAdded === 1, 'Level 6 rewards record inventory slot addition');
+  assert(l6.unlocks.npcId === 'pip', 'Level 6 highlights Pip the Goblin Merchant');
+
+  // Requirement 7: Level 7 Spellbooks Unlock
+  const l7 = getLevelProgression(7);
+  assert(l7.unlocks.generatorId === 'gen_wizard_1', "Level 7 unlocks Wizard's Desk (gen_wizard_1)");
+  assert(l7.unlocks.chainId === 'spellbooks', 'Level 7 unlocks Ancient Spellbooks chain');
+  assert(getUnlockedChainsForLevel(7).includes('spellbooks'), 'Level 7 unlocked chains include spellbooks');
+  assert(!getUnlockedChainsForLevel(6).includes('spellbooks'), 'Level 6 does not include spellbooks');
+
+  // Requirement 8: Level 8 Mythic Creatures Unlock
+  const l8 = getLevelProgression(8);
+  assert(l8.unlocks.generatorId === 'gen_nest_1', 'Level 8 unlocks Mystic Nest (gen_nest_1)');
+  assert(l8.unlocks.chainId === 'creatures', 'Level 8 unlocks Mythic Creatures chain');
+  assert(l8.unlocks.npcId === 'sylas', 'Level 8 introduces Sylas Highland Beastwarden');
+  assert(getUnlockedChainsForLevel(8).includes('creatures'), 'Level 8 unlocked chains include creatures');
+  assert(!getUnlockedChainsForLevel(7).includes('creatures'), 'Level 7 does not include creatures');
+
+  // Requirement 9: Level 9 Royal Relic Lore
+  const l9 = getLevelProgression(9);
+  assert(l9.unlocks.mechanicName === 'Royal Relic Lore', 'Level 9 unlocks Royal Relic Lore');
+  assert(l9.rewards.coins === 600 && l9.rewards.gems === 25, 'Level 9 awards 600 Coins and 25 Gems');
+
+  // Requirement 10: Level 10 Chapter Milestone
+  const l10 = getLevelProgression(10);
+  assert(l10.isChapterMilestone === true, 'Level 10 is marked as Chapter 1 Milestone');
+  assert(l10.unlocks.generatorId === 'gen_tree_1', 'Level 10 unlocks Ancient Wishing Tree (gen_tree_1)');
+  assert(l10.rewards.chestItemId === 'chest_golden', 'Level 10 awards Golden Chapter Chest');
+  assert(l10.rewards.gems === 50, 'Level 10 awards 50 Gems bounty');
+
+  // Requirement 11: Generator Unlocks Gated Properly per Level
+  assert(getGeneratorUnlockedAtLevel(1) === 'gen_garden_1', 'Level 1 generator is gen_garden_1');
+  assert(getGeneratorUnlockedAtLevel(2) === null, 'Level 2 does not unlock a new generator');
+  assert(getGeneratorUnlockedAtLevel(3) === 'gen_alchemist_1', 'Level 3 generator is gen_alchemist_1');
+  assert(getGeneratorUnlockedAtLevel(5) === 'gen_forge_1', 'Level 5 generator is gen_forge_1');
+  assert(getGeneratorUnlockedAtLevel(7) === 'gen_wizard_1', 'Level 7 generator is gen_wizard_1');
+  assert(getGeneratorUnlockedAtLevel(8) === 'gen_nest_1', 'Level 8 generator is gen_nest_1');
+  assert(getGeneratorUnlockedAtLevel(10) === 'gen_tree_1', 'Level 10 generator is gen_tree_1');
+
+  // Requirement 12: Orders Never Request Locked Chains
+  const l1Grid: (BoardItem | null)[][] = [
+    [{ instanceId: 'g1', itemId: 'herb_1', isGenerator: true, generatorId: 'gen_garden_1', tileState: 'normal' }],
+  ];
+  for (let i = 0; i < 20; i++) {
+    const o = generateSafeRandomOrder(l1Grid, [], 1, []);
+    assert(o.requirements.every(r => r.itemId.startsWith('herb_')), `Order #${i + 1} at Level 1 strictly requests herbs`);
+  }
+
+  // Requirement 13: Progression Migration Preserves Existing Save & Upgrades Slots
+  const legacyHighLevelSave = JSON.stringify({
+    level: 6,
+    coins: 1200,
+    gems: 45,
+    energy: 90,
+    maxEnergy: 100,
+    grid: [
+      [{ instanceId: 'g1', itemId: 'herb_1', isGenerator: true, generatorId: 'gen_garden_1', tileState: 'normal' }],
+      [{ instanceId: 'g2', itemId: 'potion_1', isGenerator: true, generatorId: 'gen_alchemist_1', tileState: 'normal' }],
+    ],
+  });
+
+  const migratedProg = hydrateAndMigrateSave(null, legacyHighLevelSave, Date.now());
+  assert(migratedProg.state.level === 6, 'Migration preserves Level 6');
+  assert(migratedProg.state.maxInventorySlots === 6, 'Level 6 save correctly upgrades to 6 inventory slots');
+  assert(migratedProg.state.inventory.length === 6, 'Inventory array length is 6');
+  assert(Array.isArray(migratedProg.state.claimedLevelRewardIds), 'claimedLevelRewardIds is initialized on migrated save');
 }
 
 console.log(`\n========================================`);

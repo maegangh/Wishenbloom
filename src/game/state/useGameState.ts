@@ -9,6 +9,12 @@ import {
 } from '../types';
 import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
+import {
+  LEVEL_PROGRESSION,
+  getLevelProgression,
+  LevelProgressionDef,
+  LevelRewards,
+} from '../data/progression';
 import { audio } from '../audio/audioManager';
 import {
   GRID_ROWS,
@@ -69,7 +75,8 @@ export function useGameState() {
 
   const [levelUpData, setLevelUpData] = useState<{
     level: number;
-    rewards: { coins: number; gems: number; energy: number };
+    progression?: LevelProgressionDef;
+    rewards: LevelRewards;
   } | null>(null);
 
   const [discoveryPopupItem, setDiscoveryPopupItem] = useState<ItemDef | null>(null);
@@ -185,7 +192,7 @@ export function useGameState() {
     setState((prev) => ({ ...prev, isTutorialActive: false }));
   }, []);
 
-  // Helper to add XP and check level up
+  // Centralized Helper to add XP and evaluate level-up progression
   const grantXP = useCallback((xpGain: number) => {
     setState((prev) => {
       let newXp = prev.xp + xpGain;
@@ -193,66 +200,109 @@ export function useGameState() {
       let newXpToNext = prev.xpToNextLevel;
       let leveledUp = false;
 
+      let accumulatedCoins = 0;
+      let accumulatedGems = 0;
+      let accumulatedInvSlots = 0;
+      let lastProgDef: LevelProgressionDef | undefined;
+      const claimedRewardIds = [...(prev.claimedLevelRewardIds || [])];
+
+      const newGrid = prev.grid.map((row) => [...row]);
+      let newInventory = [...prev.inventory];
+      let maxSlots = prev.maxInventorySlots;
+
       while (newXp >= newXpToNext) {
         newXp -= newXpToNext;
         newLevel += 1;
-        newXpToNext = Math.round(newXpToNext * 1.35 + 40);
+        const progDef = getLevelProgression(newLevel);
+        lastProgDef = progDef;
+        newXpToNext = progDef.xpRequired;
         leveledUp = true;
+
+        // Reward player only if not already claimed
+        if (!claimedRewardIds.includes(newLevel)) {
+          claimedRewardIds.push(newLevel);
+          accumulatedCoins += progDef.rewards.coins;
+          accumulatedGems += progDef.rewards.gems;
+
+          // 1. Check Generator Unlock
+          if (progDef.unlocks.generatorId) {
+            const genId = progDef.unlocks.generatorId;
+            const alreadyHas =
+              hasGenerator(newGrid, genId) ||
+              newInventory.some((inv) => inv?.generatorId === genId);
+
+            if (!alreadyHas) {
+              const defaultItemId =
+                genId.startsWith('gen_garden') ? 'herb_1'
+                : genId.startsWith('gen_alchemist') ? 'potion_1'
+                : genId.startsWith('gen_forge') ? 'forge_1'
+                : genId.startsWith('gen_wizard') ? 'book_1'
+                : genId.startsWith('gen_nest') ? 'creature_1'
+                : 'coin_item_1';
+
+              spawnItemOnFirstEmpty(newGrid, {
+                instanceId: `gen_${genId}_${Date.now()}`,
+                itemId: defaultItemId,
+                isGenerator: true,
+                generatorId: genId,
+                tileState: 'normal',
+              });
+            }
+          }
+
+          // 2. Check Inventory Slot Expansion (Level 6)
+          if (progDef.rewards.inventorySlotsAdded || progDef.unlocks.inventorySlotIncrease) {
+            const addSlots = progDef.rewards.inventorySlotsAdded || progDef.unlocks.inventorySlotIncrease || 1;
+            maxSlots += addSlots;
+            while (newInventory.length < maxSlots) {
+              newInventory.push(null);
+            }
+            accumulatedInvSlots += addSlots;
+          }
+
+          // 3. Check Special Chest Reward (e.g. Golden Chest at Level 10)
+          if (progDef.rewards.chestItemId) {
+            spawnItemOnFirstEmpty(newGrid, {
+              instanceId: `reward_${progDef.rewards.chestItemId}_${Date.now()}`,
+              itemId: progDef.rewards.chestItemId,
+              tileState: 'normal',
+            });
+          }
+        }
       }
 
-      if (leveledUp) {
+      if (leveledUp && lastProgDef) {
         audio.playLevelUp();
         confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
+          particleCount: newLevel === 10 ? 150 : 80,
+          spread: newLevel === 10 ? 100 : 70,
+          origin: { y: 0.55 },
         });
 
-        const rewards = {
-          coins: newLevel * 100,
-          gems: Math.floor(newLevel * 2.5) + 3,
-          energy: prev.maxEnergy,
-        };
-
-        setLevelUpData({ level: newLevel, rewards });
-
-        // If level unlocks new generator, spawn it if space available
-        const newGrid = prev.grid.map((row) => [...row]);
-        if (newLevel === 2 && !hasGenerator(newGrid, 'gen_wizard_1')) {
-          spawnItemOnFirstEmpty(newGrid, {
-            instanceId: `gen_wizard_${Date.now()}`,
-            itemId: 'book_1',
-            isGenerator: true,
-            generatorId: 'gen_wizard_1',
-            tileState: 'normal',
-          });
-        } else if (newLevel === 3 && !hasGenerator(newGrid, 'gen_forge_1')) {
-          spawnItemOnFirstEmpty(newGrid, {
-            instanceId: `gen_forge_${Date.now()}`,
-            itemId: 'forge_1',
-            isGenerator: true,
-            generatorId: 'gen_forge_1',
-            tileState: 'normal',
-          });
-        } else if (newLevel === 4 && !hasGenerator(newGrid, 'gen_nest_1')) {
-          spawnItemOnFirstEmpty(newGrid, {
-            instanceId: `gen_nest_${Date.now()}`,
-            itemId: 'creature_1',
-            isGenerator: true,
-            generatorId: 'gen_nest_1',
-            tileState: 'normal',
-          });
-        }
+        setLevelUpData({
+          level: newLevel,
+          progression: lastProgDef,
+          rewards: {
+            coins: accumulatedCoins,
+            gems: accumulatedGems,
+            energy: prev.maxEnergy,
+            chestItemId: lastProgDef.rewards.chestItemId,
+            inventorySlotsAdded: accumulatedInvSlots > 0 ? accumulatedInvSlots : undefined,
+          },
+        });
 
         return {
           ...prev,
           level: newLevel,
           xp: newXp,
           xpToNextLevel: newXpToNext,
-          coins: prev.coins + rewards.coins,
-          gems: prev.gems + rewards.gems,
-          energy: prev.maxEnergy, // Full refill on level up!
+          coins: prev.coins + accumulatedCoins,
+          gems: prev.gems + accumulatedGems,
+          energy: prev.maxEnergy, // Full refill on level up
+          claimedLevelRewardIds: claimedRewardIds,
           grid: newGrid,
+          inventory: newInventory,
+          maxInventorySlots: maxSlots,
         };
       }
 
@@ -278,41 +328,41 @@ export function useGameState() {
 
     const generator = validation.generatorDef!;
     const emptySpot = findNearestEmpty(state.grid, row, col);
+
     if (!emptySpot) {
-      // Board full!
-      audio.playTone(220, 'sawtooth', 0.2, 0.15);
+      audio.playTone(220, 'sawtooth', 0.2, 0.1);
       return;
     }
 
-    const chosenItemId = rollGeneratorDrop(generator);
-    audio.playGeneratorTap();
+    const droppedItemId = rollGeneratorDrop(generator);
+    const now = Date.now();
+
+    audio.playSpawn();
 
     setState((prev) => {
       const newGrid = prev.grid.map((r) => [...r]);
-      const now = Date.now();
+      const currentGen = newGrid[row][col];
 
-      // Update tapped generator cooldown if configured
-      if (generator.cooldownMs > 0) {
+      // Update generator cooldown / lastTappedAt
+      if (currentGen) {
         newGrid[row][col] = {
-          ...item,
-          cooldownUntil: now + generator.cooldownMs,
+          ...currentGen,
           lastTappedAt: now,
+          cooldownUntil: generator.cooldownMs > 0 ? now + generator.cooldownMs : undefined,
         };
       }
 
-      // Place spawned item
-      const newItem: BoardItem = {
-        instanceId: `item_${now}_${Math.random()}`,
-        itemId: chosenItemId,
+      // Place newly spawned item
+      newGrid[emptySpot.row][emptySpot.col] = {
+        instanceId: `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+        itemId: droppedItemId,
         tileState: 'normal',
       };
-      newGrid[emptySpot.row][emptySpot.col] = newItem;
 
-      // Tutorial progression check (Step 0 or 1)
+      // Action-driven tutorial advance on generator tap (Step 1 -> Step 2)
       let nextTutorialStep = prev.tutorialStep;
-      if (prev.isTutorialActive) {
-        if (prev.tutorialStep === 0) nextTutorialStep = 1;
-        else if (prev.tutorialStep === 1) nextTutorialStep = 2;
+      if (prev.isTutorialActive && prev.tutorialStep === 1) {
+        nextTutorialStep = 2;
       }
 
       return {
@@ -327,15 +377,15 @@ export function useGameState() {
       };
     });
 
-    checkDiscovery(chosenItemId);
+    checkDiscovery(droppedItemId);
     updateQuests('tap_generator', 1);
     updateQuests('spend_energy', generator.energyCost);
   }, [state.grid, state.energy, checkDiscovery, updateQuests]);
 
-  // 2. Upgrade Generator
+  // 2. Upgrade Generator (Coins Economy & Evolution Pathway)
   const upgradeGenerator = useCallback((row: number, col: number) => {
     const item = state.grid[row]?.[col];
-    if (!item) return;
+    if (!item || !item.isGenerator || !item.generatorId) return;
 
     const validation = validateGeneratorUpgrade(item, state.coins);
     if (!validation.canUpgrade || !validation.nextDef) {
@@ -355,9 +405,13 @@ export function useGameState() {
 
     setState((prev) => {
       const newGrid = prev.grid.map((r) => [...r]);
+      const currentGen = newGrid[row][col];
+      if (!currentGen) return prev;
+
       newGrid[row][col] = {
-        ...item,
+        ...currentGen,
         generatorId: nextDef.id,
+        cooldownUntil: undefined,
       };
 
       return {
@@ -367,21 +421,29 @@ export function useGameState() {
       };
     });
 
-    grantXP(nextDef.level * 20);
-    setSelectedCell(null);
+    grantXP(Math.round(cost * 0.4 + 20));
   }, [state.grid, state.coins, grantXP]);
 
-  // 3. Move or Merge Item (FIXED Dusty Tile Ordering)
-  const moveOrMergeItem = useCallback((fromRow: number, fromCol: number, toRow: number, toCol: number) => {
-    if (fromRow === toRow && fromCol === toCol) return;
+  // 3. Move or Merge Item (with prioritized Dusty Tile Resolution)
+  const moveOrMergeItem = useCallback((
+    fromRow: number,
+    fromCol: number,
+    toRow: number,
+    toCol: number
+  ) => {
+    if (fromRow === toRow && fromCol === toCol) {
+      setSelectedCell({ row: fromRow, col: fromCol });
+      return;
+    }
 
     const sourceItem = state.grid[fromRow]?.[fromCol];
-    if (!sourceItem) return;
-
     const targetItem = state.grid[toRow]?.[toCol];
 
-    // CASE 1: Move item to empty tile
+    if (!sourceItem) return;
+
+    // CASE 1: Move item to empty slot
     if (!targetItem) {
+      audio.playMove();
       setState((prev) => {
         const newGrid = prev.grid.map((r) => [...r]);
         newGrid[toRow][toCol] = sourceItem;
@@ -392,7 +454,7 @@ export function useGameState() {
       return;
     }
 
-    // CASE 2: Merge validation check
+    // CASE 2: Both tiles have items -> Run hardened merge validity check
     const mergeCheck = checkMergeValidity(sourceItem, targetItem);
 
     if (mergeCheck.canMerge && mergeCheck.nextItemId) {
@@ -493,71 +555,63 @@ export function useGameState() {
     const item = state.grid[row]?.[col];
     if (!item) return;
 
-    const def = ITEMS[item.itemId];
-    if (!def || !def.isConsumable) return;
+    const itemDef = ITEMS[item.itemId];
+    if (!itemDef?.isConsumable) return;
 
-    if (def.consumableType === 'energy' && def.consumableValue) {
-      audio.playEnergy();
-      setState((prev) => {
-        const newGrid = prev.grid.map((r) => [...r]);
-        newGrid[row][col] = null;
-        return {
-          ...prev,
-          energy: Math.min(prev.maxEnergy * 2, prev.energy + (def.consumableValue || 10)),
-          grid: newGrid,
-        };
-      });
-    } else if (def.consumableType === 'gems' && def.consumableValue) {
-      audio.playGem();
-      setState((prev) => {
-        const newGrid = prev.grid.map((r) => [...r]);
-        newGrid[row][col] = null;
-        return {
-          ...prev,
-          gems: prev.gems + (def.consumableValue || 2),
-          grid: newGrid,
-        };
-      });
-    } else if (def.consumableType === 'chest') {
-      audio.playChestOpen();
-      const tier = def.chestTier || 'wooden';
-      const rewards: BoardItem[] = [];
+    const cType = itemDef.consumableType;
+    const cVal = itemDef.consumableValue || 0;
 
-      if (tier === 'wooden') {
-        rewards.push({ instanceId: `chest_r1_${Date.now()}`, itemId: 'energy_1', tileState: 'normal' });
-        rewards.push({ instanceId: `chest_r2_${Date.now()}`, itemId: 'herb_2', tileState: 'normal' });
-        rewards.push({ instanceId: `chest_r3_${Date.now()}`, itemId: 'coin_item_2', tileState: 'normal' });
-      } else if (tier === 'silver') {
-        rewards.push({ instanceId: `chest_r1_${Date.now()}`, itemId: 'energy_2', tileState: 'normal' });
-        rewards.push({ instanceId: `chest_r2_${Date.now()}`, itemId: 'gem_1', tileState: 'normal' });
-        rewards.push({ instanceId: `chest_r3_${Date.now()}`, itemId: 'potion_3', tileState: 'normal' });
-      } else {
-        rewards.push({ instanceId: `chest_r1_${Date.now()}`, itemId: 'energy_3', tileState: 'normal' });
-        rewards.push({ instanceId: `chest_r2_${Date.now()}`, itemId: 'gem_2', tileState: 'normal' });
-        rewards.push({ instanceId: `chest_r3_${Date.now()}`, itemId: 'herb_4', tileState: 'normal' });
-        rewards.push({ instanceId: `chest_r4_${Date.now()}`, itemId: 'book_3', tileState: 'normal' });
+    setState((prev) => {
+      const newGrid = prev.grid.map((r) => [...r]);
+      newGrid[row][col] = null;
+
+      let newCoins = prev.coins;
+      let newGems = prev.gems;
+      let newEnergy = prev.energy;
+
+      if (cType === 'energy') {
+        audio.playSparkle();
+        newEnergy = Math.min(prev.maxEnergy + 50, prev.energy + cVal);
+      } else if (cType === 'coins') {
+        audio.playCoin();
+        newCoins += cVal;
+      } else if (cType === 'gems') {
+        audio.playGem();
+        newGems += cVal;
+      } else if (cType === 'chest') {
+        audio.playChestOpen();
+        confetti({ particleCount: 60, spread: 70 });
+
+        const chestItems =
+          itemDef.chestTier === 'royal'
+            ? ['energy_2', 'gem_2', 'coin_item_3', 'potion_3']
+            : itemDef.chestTier === 'golden'
+            ? ['energy_1', 'gem_1', 'coin_item_2', 'potion_2']
+            : ['energy_1', 'coin_item_1', 'herb_2'];
+
+        chestItems.forEach((cItemId) => {
+          spawnItemOnFirstEmpty(newGrid, {
+            instanceId: `chest_drop_${Date.now()}_${Math.random()}`,
+            itemId: cItemId,
+            tileState: 'normal',
+          });
+        });
       }
 
-      setState((prev) => {
-        const newGrid = prev.grid.map((r) => [...r]);
-        newGrid[row][col] = null;
-
-        rewards.forEach((r) => {
-          const empty = findNearestEmpty(newGrid, row, col);
-          if (empty) {
-            newGrid[empty.row][empty.col] = r;
-          }
-        });
-
-        return { ...prev, grid: newGrid };
-      });
-    }
+      return {
+        ...prev,
+        coins: newCoins,
+        gems: newGems,
+        energy: newEnergy,
+        grid: newGrid,
+      };
+    });
 
     setSelectedCell(null);
   }, [state.grid]);
 
-  // 6. Pop or Purchase Bubble Item
-  const popBubble = useCallback((row: number, col: number, withGems = false) => {
+  // 6. Pop Bubble
+  const popBubble = useCallback((row: number, col: number, withGems: boolean) => {
     const item = state.grid[row]?.[col];
     if (!item || item.tileState !== 'bubble') return;
 
@@ -567,6 +621,7 @@ export function useGameState() {
         audio.playTone(200, 'sawtooth', 0.15, 0.1);
         return;
       }
+
       audio.playGem();
       setState((prev) => {
         const newGrid = prev.grid.map((r) => [...r]);

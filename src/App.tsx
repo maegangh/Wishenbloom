@@ -160,6 +160,7 @@ export default function App() {
         {levelUpData && (
           <LevelUpModal
             level={levelUpData.level}
+            progression={levelUpData.progression}
             rewards={levelUpData.rewards}
             onClose={() => setLevelUpData(null)}
           />

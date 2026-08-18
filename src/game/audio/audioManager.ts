@@ -92,6 +92,20 @@ class AudioManager {
     }, 40);
   }
 
+  public playSpawn() {
+    this.playGeneratorTap();
+  }
+
+  public playMove() {
+    if (this.isMuted) return;
+    this.initCtx();
+    this.playTone(300, 'sine', 0.06, 0.1);
+  }
+
+  public playSparkle() {
+    this.playGem();
+  }
+
   // Coin collect ping
   public playCoin() {
     if (this.isMuted) return;
