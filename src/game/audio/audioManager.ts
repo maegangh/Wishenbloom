@@ -1,4 +1,4 @@
-// Web Audio API pure procedural synthesizer for Mergevale
+// Web Audio API pure procedural synthesizer for Wishenbloom
 class AudioManager {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;

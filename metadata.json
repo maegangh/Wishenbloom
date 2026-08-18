@@ -1,6 +1,6 @@
 {
-  "name": "Mergevale",
-  "description": "A cozy 2D fantasy merge-2 adventure game with magical item chains, generators, NPC orders, kingdom restoration, and discovery.",
+  "name": "Wishenbloom",
+  "description": "A cozy 2D fantasy merge-2 adventure game in the enchanted kingdom of Wishenbloom. Merge magical items, fulfill citizen orders, awaken creatures, and revive the ancient power of the Bloom.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

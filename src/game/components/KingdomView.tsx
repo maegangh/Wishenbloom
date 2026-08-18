@@ -22,10 +22,10 @@ export const KingdomView: React.FC<KingdomViewProps> = ({
       <div className="rounded-3xl bg-gradient-to-br from-amber-950/80 via-slate-900 to-indigo-950/90 border border-amber-500/30 p-4 shadow-xl backdrop-blur-md text-white">
         <div className="flex items-center gap-2 mb-1">
           <Sparkles className="w-5 h-5 text-amber-400" />
-          <h2 className="text-lg font-black text-amber-200">Kingdom of Mergevale</h2>
+          <h2 className="text-lg font-black text-amber-200">Kingdom of Wishenbloom</h2>
         </div>
         <p className="text-xs text-slate-300 leading-relaxed">
-          Restore the forgotten ruins of your fantasy realm. Rebuild glorious plazas, magical sanctuaries, and ancient towers to unlock powerful story lore and new abilities!
+          Restore the dormant ruins of your fantasy realm and rekindle the ancient power of the Bloom. Rebuild glorious plazas, magical sanctuaries, and ancient towers to unlock powerful story lore and awaken mystical guardians!
         </p>
       </div>
 

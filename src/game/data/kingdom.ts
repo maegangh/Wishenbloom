@@ -5,7 +5,7 @@ export const INITIAL_KINGDOM_AREAS: KingdomArea[] = [
     id: 'fountain',
     name: 'The Sunfire Plaza & Fountain',
     category: 'Village Center',
-    description: 'The historic heart of Mergevale. Ancient crystal waters once brought vitality and joy to all citizens.',
+    description: 'The historic heart of Wishenbloom. Ancient crystal waters once pulsed with the living energy of the Bloom, bringing vitality and joy to all citizens.',
     currentStage: 0,
     maxStages: 4,
     unlockedAtLevel: 1,

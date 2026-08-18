@@ -11,8 +11,8 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({ onDismiss }) =
 
   const steps = [
     {
-      title: 'Welcome to Mergevale!',
-      text: 'Greetings, apprentice restorer! Our once-glorious fantasy realm has fallen into ruin. Together, we shall bring back the ancient enchantments.',
+      title: 'Welcome to Wishenbloom!',
+      text: 'Greetings, apprentice restorer! Our once-glorious kingdom was sustained by the ancient living magic of the Bloom. Now dormant, together we shall rekindle the Bloom and revive the realm.',
       npc: 'elowen',
     },
     {

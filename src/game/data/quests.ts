@@ -34,7 +34,7 @@ export const INITIAL_QUESTS: Quest[] = [
   {
     id: 'quest_complete_order',
     title: 'Helping Hands',
-    description: 'Fulfill 2 NPC orders to bring prosperity back to Mergevale.',
+    description: 'Fulfill 2 NPC orders to bring prosperity back to Wishenbloom.',
     type: 'fulfill_order',
     target: 2,
     current: 0,

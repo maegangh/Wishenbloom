@@ -35,7 +35,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           Level Up!
         </h2>
         <p className="text-xs text-slate-300 mb-4">
-          Your mystical prowess expands! The realm of Mergevale celebrates your achievements.
+          Your mystical prowess expands! The realm of Wishenbloom celebrates your achievements.
         </p>
 
         {/* Rewards Box */}

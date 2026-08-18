@@ -121,7 +121,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="pt-3 border-t border-slate-800 flex flex-col gap-2">
           <button
             onClick={() => {
-              if (window.confirm('Reset all game progress and restart Mergevale from the beginning?')) {
+              if (window.confirm('Reset all game progress and restart Wishenbloom from the beginning?')) {
                 onResetGame();
                 onClose();
               }
@@ -134,7 +134,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <div className="flex items-center justify-center gap-1 text-[10px] text-slate-500 pt-1">
             <Info className="w-3 h-3" />
-            <span>Mergevale v1.0.0 • Cozy Fantasy Mobile Engine</span>
+            <span>Wishenbloom v1.0.0 • Cozy Fantasy Mobile Engine</span>
           </div>
         </div>
       </div>

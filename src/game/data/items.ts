@@ -3,7 +3,7 @@ import { ItemDef, ItemChainId } from '../types';
 export const ITEM_CHAINS: Record<ItemChainId, { name: string; description: string; color: string; icon: string }> = {
   herbs: {
     name: 'Magical Herb Chain',
-    description: 'Enchanted botanical flora gathered from the whispering groves of Mergevale.',
+    description: 'Enchanted botanical flora nourished by the revitalizing Bloom of Wishenbloom.',
     color: '#10b981',
     icon: 'leaf',
   },
@@ -429,7 +429,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tier: 1,
     maxTier: 8,
     rarity: 'common',
-    description: 'An ancient minted coin stamped with the crest of Mergevale.',
+    description: 'An ancient minted coin stamped with the crest of Wishenbloom.',
     sellValue: 1,
     xpValue: 1,
     mergeResultId: 'coin_item_2',
@@ -776,7 +776,7 @@ export const ITEMS: Record<string, ItemDef> = {
     tier: 8,
     maxTier: 8,
     rarity: 'mythic',
-    description: 'A colossal sovereign guardian of the stars that protects all of Mergevale.',
+    description: 'A colossal sovereign guardian of the stars that protects all of Wishenbloom.',
     sellValue: 400,
     xpValue: 600,
     iconType: 'creature_8',

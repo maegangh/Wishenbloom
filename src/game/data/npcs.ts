@@ -34,7 +34,7 @@ export const NPCS: Record<string, NPCDef> = {
     role: 'Royal Heir',
     title: 'The Realm Restorer',
     avatar: 'aurelia',
-    bio: 'Dedicated to revitalizing Mergevale to its golden glory and restoring joy to every village square.',
+    bio: 'Dedicated to revitalizing Wishenbloom to its golden glory and rekindling the ancient Bloom in every village square.',
     color: '#eab308',
   },
   pip: {

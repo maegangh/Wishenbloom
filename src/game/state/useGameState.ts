@@ -15,7 +15,8 @@ import { INITIAL_KINGDOM_AREAS } from '../data/kingdom';
 import { INITIAL_QUESTS } from '../data/quests';
 import { audio } from '../audio/audioManager';
 
-const STORAGE_KEY = 'mergevale_save_v1';
+const PRIMARY_STORAGE_KEY = 'wishenbloom_save_v1';
+const LEGACY_STORAGE_KEY = 'mergevale_save_v1'; // Backward compatibility key for legacy prototype saves
 const GRID_ROWS = 9;
 const GRID_COLS = 7;
 const ENERGY_RECHARGE_SECONDS = 120; // 1 energy every 2 minutes
@@ -120,7 +121,19 @@ export function createInitialGameState(): GameState {
 export function useGameState() {
   const [state, setState] = useState<GameState>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      // 1. Check primary Wishenbloom save key
+      let saved = localStorage.getItem(PRIMARY_STORAGE_KEY);
+      
+      // 2. If not found, check legacy Mergevale save key and migrate
+      if (!saved) {
+        const legacySaved = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacySaved) {
+          saved = legacySaved;
+          // One-time save migration into Wishenbloom key
+          localStorage.setItem(PRIMARY_STORAGE_KEY, legacySaved);
+        }
+      }
+
       if (saved) {
         const parsed: GameState = JSON.parse(saved);
         // Calculate offline energy recharge
@@ -149,7 +162,7 @@ export function useGameState() {
   // Auto-save on meaningful state changes
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, lastSavedAt: Date.now() }));
+      localStorage.setItem(PRIMARY_STORAGE_KEY, JSON.stringify({ ...state, lastSavedAt: Date.now() }));
     } catch (e) {
       console.error('Failed to save to localStorage:', e);
     }
@@ -906,7 +919,8 @@ export function useGameState() {
     });
   };
   const devResetSave = () => {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(PRIMARY_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
     setState(createInitialGameState());
     setSelectedCell(null);
   };
