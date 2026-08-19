@@ -7,6 +7,8 @@ export type ItemChainId =
   | 'creatures'
   | 'textiles'
   | 'crystals'
+  | 'provisions'
+  | 'lanterns'
   | 'energy'
   | 'gems'
   | 'chests';
@@ -165,6 +167,19 @@ export interface GameStats {
   kingdomAreasCompleted: number;
 }
 
+export interface CompendiumMilestone {
+  id: string;
+  title: string;
+  description: string;
+  category: 'discoveries' | 'chains' | 'mastery';
+  target: number;
+  rewardCoins: number;
+  rewardGems: number;
+  rewardEnergy?: number;
+  rewardChestId?: string;
+  badgeTitle: string;
+}
+
 export interface GameState {
   // Currencies & Progression
   level: number;
@@ -189,10 +204,11 @@ export interface GameState {
   // Kingdom Restoration
   kingdomAreas: KingdomArea[];
 
-  // Discovery Book
+  // Discovery Book & Milestones
   discoveredItemIds: string[];
   claimedDiscoveryRewardIds: string[];
   claimedLevelRewardIds?: number[];
+  claimedCompendiumMilestoneIds?: string[];
 
   // Tutorial
   tutorialStep: number;

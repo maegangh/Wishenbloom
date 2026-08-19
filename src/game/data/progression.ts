@@ -477,22 +477,231 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     isChapterMilestone: true,
   },
+  21: {
+    level: 21,
+    xpRequired: 12000,
+    cumulativeXp: 67600,
+    title: 'Beyond the Causeway',
+    subtitle: 'The Veiled Gate Appears',
+    storySnippet:
+      'Beyond the Moonstone Causeway lies the threshold to the Outer Provinces. Standing tall amidst ancient fog is the colossal Veiled Gate, sealed centuries ago under royal edict with unanswered questions.',
+    unlocks: {
+      kingdomAreaId: 'veiled_gate',
+      kingdomAreaName: 'The Veiled Gate',
+      mechanicName: 'Outer Provinces Exploration',
+      mechanicDescription: 'Venture beyond the central kingdom into the foggy Outer Provinces and begin restoring the ancient border crossings.',
+    },
+    rewards: {
+      coins: 900,
+      gems: 0,
+      energy: 35,
+    },
+  },
+  22: {
+    level: 22,
+    xpRequired: 14000,
+    cumulativeXp: 79600,
+    title: 'Echoes of the Border',
+    subtitle: 'Conflicting Records',
+    storySnippet:
+      'As you work near the gate, Archmage Valerie and Princess Aurelia review old provincial ledgers. Certain dates and royal decrees regarding the frontier contain stark contradictions—some claiming the border was sealed for safety, others hinting at sudden containment.',
+    unlocks: {
+      mechanicName: 'Provincial Mixed Orders',
+      mechanicDescription: 'Citizens and returning travelers request varied multi-chain supplies to support the border expansion.',
+    },
+    rewards: {
+      coins: 950,
+      gems: 0,
+      energy: 35,
+    },
+  },
+  23: {
+    level: 23,
+    xpRequired: 16500,
+    cumulativeXp: 93600,
+    title: "The Hearthkeeper's Call",
+    subtitle: 'Warmth in the Mist',
+    storySnippet:
+      'Bram, a renowned master provisioner of the border marches, arrives with his enchanted stone hearth! He kindles the fire with moonberries and spiced herbs, offering hearty meals that warm the spirits of all working near the frontier.',
+    unlocks: {
+      generatorId: 'gen_hearth_1',
+      generatorName: "Bloomkeeper's Hearth",
+      chainId: 'provisions',
+      chainName: 'Royal Provisions',
+      npcId: 'bram',
+      npcName: 'Bram',
+      npcRole: 'Master Provisioner',
+      mechanicName: 'Enchanted Culinary Baking',
+      mechanicDescription: 'Bake moonberry tarts, herb broths, and grand royal feasts to nourish workers and travelers.',
+    },
+    rewards: {
+      coins: 1000,
+      gems: 5,
+      energy: 40,
+    },
+  },
+  24: {
+    level: 24,
+    xpRequired: 19500,
+    cumulativeXp: 110100,
+    title: 'Moonhaven Awakens',
+    subtitle: 'The Border Settlement',
+    storySnippet:
+      'Past the Veiled Gate, the abandoned settlement of Moonhaven begins stirring with life. Restoring its cottages and tavern brings back provincial families who share forgotten folklore of ancient Bloom conduits.',
+    unlocks: {
+      kingdomAreaId: 'moonhaven',
+      kingdomAreaName: 'Moonhaven Settlement',
+      mechanicName: 'Settlement Revival',
+      mechanicDescription: 'Rebuild Moonhaven to welcome families, artisans, and traders back to the border valleys.',
+    },
+    rewards: {
+      coins: 1100,
+      gems: 0,
+      energy: 40,
+    },
+  },
+  25: {
+    level: 25,
+    xpRequired: 23000,
+    cumulativeXp: 129600,
+    title: 'The Compendium Archives',
+    subtitle: 'Chapter 3 Midpoint Milestone',
+    storySnippet:
+      'Your extensive journeys as Bloomkeeper have documented dozens of rare botanical, alchemical, and craft wonders. The royal archives inaugurate the Compendium Milestones to honor your encyclopedic achievements!',
+    unlocks: {
+      mechanicName: 'Compendium Milestones',
+      mechanicDescription: 'Achieve grand collection goals across discovery count and chain tiers for valuable coins, gems, and chests!',
+    },
+    rewards: {
+      coins: 1500,
+      gems: 15,
+      energy: 100,
+      isFullEnergyRefill: true,
+      chestItemId: 'chest_golden',
+    },
+  },
+  26: {
+    level: 26,
+    xpRequired: 27000,
+    cumulativeXp: 152600,
+    title: 'The Fractured Seal',
+    subtitle: 'Evidence of Intrusion',
+    storySnippet:
+      'While clearing the highland road, you unearth physical evidence: a major conduit wardstone bearing severe chisel marks that occurred long after the official royal sealing. Someone returned to the border secretly in the past—though their identity and intent remain a complete mystery.',
+    unlocks: {
+      mechanicName: 'Altered Seals Investigation',
+      mechanicDescription: 'Uncover cryptic historical fragments and investigate anomalous conduit wardings.',
+    },
+    rewards: {
+      coins: 1250,
+      gems: 0,
+      energy: 45,
+    },
+  },
+  27: {
+    level: 27,
+    xpRequired: 31500,
+    cumulativeXp: 179600,
+    title: 'Starlight in the Mist',
+    subtitle: "The Wayfinder's Lantern",
+    storySnippet:
+      'Elena, an intrepid provincial wayfinder and cartographer, establishes her Starlight Workshop on the high ridge. Her handcrafted moonstone lanterns and beacons pierce the dense mountain fog, illuminating forgotten paths.',
+    unlocks: {
+      generatorId: 'gen_lantern_1',
+      generatorName: 'Starlight Workshop',
+      chainId: 'lanterns',
+      chainName: 'Celestial Lanterns',
+      npcId: 'elena',
+      npcName: 'Elena',
+      npcRole: 'Starlight Wayfinder',
+      kingdomAreaId: 'beacon_ridge',
+      kingdomAreaName: 'Celestial Beacon Ridge',
+      mechanicName: 'Celestial Illumination',
+      mechanicDescription: 'Shape candles and moonstone lanterns to pierce the veil of deep mist.',
+    },
+    rewards: {
+      coins: 1350,
+      gems: 5,
+      energy: 45,
+    },
+  },
+  28: {
+    level: 28,
+    xpRequired: 36500,
+    cumulativeXp: 211100,
+    title: 'Master of Space',
+    subtitle: 'Expanded Storage Pouch',
+    storySnippet:
+      'With extensive generator families and complex multi-chain commissions demanding careful organization, your magical satchel naturally expands with an additional enchanted storage pocket.',
+    unlocks: {
+      inventorySlotIncrease: 1,
+      mechanicName: 'Storage Expansion',
+      mechanicDescription: 'Permanently unlocked your 8th inventory storage slot to manage multi-chain production smoothly.',
+    },
+    rewards: {
+      coins: 1450,
+      gems: 5,
+      energy: 45,
+      inventorySlotsAdded: 1,
+    },
+  },
+  29: {
+    level: 29,
+    xpRequired: 42000,
+    cumulativeXp: 247600,
+    title: 'Resonant Harmonics',
+    subtitle: 'The Outer Nexus Awakes',
+    storySnippet:
+      'As starlight beacons align, the subterranean Outer Conduit Nexus begins humming in direct resonance with the central kingdom! The ancient seals act not as isolated barriers, but as interlocking components of a massive network.',
+    unlocks: {
+      kingdomAreaId: 'conduit_nexus',
+      kingdomAreaName: 'The Outer Conduit Nexus',
+      mechanicName: 'Planetary Conduit Grid',
+      mechanicDescription: 'Harmonize the provincial conduit grid as you prepare to unravel the mystery of the sealing sequence.',
+    },
+    rewards: {
+      coins: 1600,
+      gems: 0,
+      energy: 50,
+    },
+  },
+  30: {
+    level: 30,
+    xpRequired: 50000,
+    cumulativeXp: 289600,
+    title: 'Chapter 3 Milestone: The Divergent Conduit',
+    subtitle: 'The Network Revealed',
+    storySnippet:
+      'You successfully restore the Outer Provinces network! Full planetary alignment reveals that the ancient conduits were sealed in a deliberate geometric sequence across the kingdom—except for the 7th provincial junction, where the seal was intentionally altered by an unknown hand. A harmonic signal chimes from the deep uncharted frontier beyond, signaling that greater truths await.',
+    unlocks: {
+      mechanicName: 'Chapter 3 Milestone',
+      mechanicDescription: 'Chapter 3 Completed! The Outer Provinces are illuminated and the true conduit mystery begins.',
+    },
+    rewards: {
+      coins: 2500,
+      gems: 30,
+      energy: 100,
+      isFullEnergyRefill: true,
+      chestItemId: 'chest_royal',
+    },
+    isChapterMilestone: true,
+  },
 };
 
 /**
- * Returns progression definition for a given level (or extrapolated if beyond level 20)
+ * Returns progression definition for a given level (or extrapolated if beyond level 30)
  */
 export function getLevelProgression(level: number): LevelProgressionDef {
   if (LEVEL_PROGRESSION[level]) {
     return LEVEL_PROGRESSION[level];
   }
 
-  // Graceful fallback / extrapolation for level 21+
-  const xpRequired = Math.round(10500 * Math.pow(1.2, level - 20));
+  // Graceful fallback / extrapolation for level 31+
+  const xpRequired = Math.round(50000 * Math.pow(1.2, level - 30));
   return {
     level,
     xpRequired,
-    cumulativeXp: 57100 + (level - 20) * 10500,
+    cumulativeXp: 289600 + (level - 30) * 50000,
     title: `Master Bloomkeeper ${level}`,
     subtitle: 'Guardian of the Realm',
     storySnippet: 'Your mastery over the Bloom deepens as you explore new frontiers of Wishenbloom.',
@@ -517,6 +726,8 @@ export function getUnlockedChainsForLevel(level: number): ItemChainId[] {
   if (level >= 10) chains.push('treasures');
   if (level >= 13) chains.push('textiles');
   if (level >= 17) chains.push('crystals');
+  if (level >= 23) chains.push('provisions');
+  if (level >= 27) chains.push('lanterns');
   return chains;
 }
 

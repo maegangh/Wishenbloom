@@ -73,6 +73,24 @@ export const NPCS: Record<string, NPCDef> = {
     bio: 'An intrepid scholar of subterranean strata who excavates ancient runestones and Bloom conduit bedrock.',
     color: '#06b6d4',
   },
+  bram: {
+    id: 'bram',
+    name: 'Bram',
+    role: 'Master Provisioner',
+    title: 'Royal Hearthkeeper',
+    avatar: 'bram',
+    bio: 'A warm-hearted chef from the border marches whose enchanted hearth stews and pastries sustain travelers venturing past the Veiled Gate.',
+    color: '#f97316',
+  },
+  elena: {
+    id: 'elena',
+    name: 'Elena',
+    role: 'Starlight Wayfinder',
+    title: 'Outer Provinces Cartographer',
+    avatar: 'elena',
+    bio: 'A vigilant scout and lanternmaker who navigates the fog-shrouded frontiers and studies the forgotten conduit beacons.',
+    color: '#38bdf8',
+  },
 };
 
 export const INITIAL_ORDERS: NPCOrder[] = [

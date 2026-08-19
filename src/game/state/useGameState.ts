@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
+import { COMPENDIUM_MILESTONES } from '../data/compendiumMilestones';
 import {
   LEVEL_PROGRESSION,
   getLevelProgression,
@@ -250,6 +251,8 @@ export function useGameState() {
                 : genId.startsWith('gen_nest') ? 'creature_1'
                 : genId.startsWith('gen_loom') ? 'textile_1'
                 : genId.startsWith('gen_quarry') ? 'crystal_1'
+                : genId.startsWith('gen_hearth') ? 'provision_1'
+                : genId.startsWith('gen_lantern') ? 'lantern_1'
                 : 'coin_item_1';
 
               spawnItemOnFirstEmpty(newGrid, {
@@ -286,8 +289,8 @@ export function useGameState() {
       if (leveledUp && lastProgDef) {
         audio.playLevelUp();
         confetti({
-          particleCount: newLevel === 10 || newLevel === 20 ? 150 : 80,
-          spread: newLevel === 10 || newLevel === 20 ? 100 : 70,
+          particleCount: newLevel === 10 || newLevel === 20 || newLevel === 30 ? 150 : 80,
+          spread: newLevel === 10 || newLevel === 20 || newLevel === 30 ? 100 : 70,
           origin: { y: 0.55 },
         });
 
@@ -931,6 +934,48 @@ export function useGameState() {
     }));
   }, [state.claimedDiscoveryRewardIds]);
 
+  // 12b. Claim Compendium Milestone
+  const claimCompendiumMilestone = useCallback((milestoneId: string) => {
+    const milestone = COMPENDIUM_MILESTONES.find((m) => m.id === milestoneId);
+    if (!milestone) return;
+
+    setState((prev) => {
+      const alreadyClaimed = (prev.claimedCompendiumMilestoneIds || []).includes(milestoneId);
+      if (alreadyClaimed) return prev;
+
+      audio.playOrderComplete();
+      confetti({ particleCount: 75, spread: 80 });
+
+      const newGrid = prev.grid.map((r) => [...r]);
+      if (milestone.rewardChestId) {
+        spawnItemOnFirstEmpty(newGrid, {
+          instanceId: `milestone_chest_${milestone.rewardChestId}_${Date.now()}`,
+          itemId: milestone.rewardChestId,
+          tileState: 'normal',
+        });
+      }
+
+      return {
+        ...prev,
+        coins: prev.coins + milestone.rewardCoins,
+        gems: prev.gems + milestone.rewardGems,
+        energy: milestone.rewardEnergy
+          ? Math.min(prev.maxEnergy, prev.energy + milestone.rewardEnergy)
+          : prev.energy,
+        grid: newGrid,
+        claimedCompendiumMilestoneIds: [
+          ...(prev.claimedCompendiumMilestoneIds || []),
+          milestoneId,
+        ],
+        stats: {
+          ...prev.stats,
+          totalCoinsEarned: prev.stats.totalCoinsEarned + milestone.rewardCoins,
+          totalGemsEarned: prev.stats.totalGemsEarned + milestone.rewardGems,
+        },
+      };
+    });
+  }, []);
+
   // 13. Dev & Testing Helpers
   const devAddCoins = (amt = 500) => setState((p) => ({ ...p, coins: p.coins + amt }));
   const devAddGems = (amt = 50) => setState((p) => ({ ...p, gems: p.gems + amt }));
@@ -989,6 +1034,7 @@ export function useGameState() {
     restoreKingdomStage,
     claimQuest,
     claimDiscoveryReward,
+    claimCompendiumMilestone,
     advanceTutorial,
     dismissTutorial,
     grantXP,

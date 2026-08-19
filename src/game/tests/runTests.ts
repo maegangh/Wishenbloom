@@ -508,6 +508,133 @@ console.log('\n[8] Testing Story Integrity & Narrative Ambiguity:');
   );
 }
 
+// TEST SUITE 9: Chapter 3 Progression (Player Levels 21–30)
+console.log('\n[9] Testing Chapter 3 Progression (Player Levels 21–30):');
+{
+  // 1. Level 21: Outer Provinces & Veiled Gate
+  const l21 = getLevelProgression(21);
+  assert(l21.unlocks.kingdomAreaId === 'veiled_gate', 'Level 21 unlocks Veiled Gate kingdom area');
+  assert(l21.rewards.gems === 0, 'Level 21 awards 0 Gems');
+  assert(l21.rewards.energy === 35, 'Level 21 awards 35 Energy');
+
+  // 2. Level 22: Echoes of the Border / Mixed Orders
+  const l22 = getLevelProgression(22);
+  assert(l22.unlocks.mechanicName === 'Provincial Mixed Orders', 'Level 22 unlocks Provincial Mixed Orders mechanic');
+  assert(l22.rewards.gems === 0, 'Level 22 awards 0 Gems');
+  assert(l22.rewards.energy === 35, 'Level 22 awards 35 Energy');
+
+  // 3. Level 23: Culinary Provisions & Bloomkeeper's Hearth
+  const l23 = getLevelProgression(23);
+  assert(l23.unlocks.generatorId === 'gen_hearth_1', "Level 23 unlocks Bloomkeeper's Hearth (gen_hearth_1)");
+  assert(l23.unlocks.chainId === 'provisions', 'Level 23 unlocks provisions chain');
+  assert(l23.unlocks.npcId === 'bram', 'Level 23 introduces Bram Hearthkeeper');
+  assert(getUnlockedChainsForLevel(23).includes('provisions'), 'Level 23 unlocked chains include provisions');
+  assert(!getUnlockedChainsForLevel(22).includes('provisions'), 'Level 22 does not include provisions');
+  assert(Boolean(ITEMS['provision_1'] && ITEMS['provision_8']), 'Provisions chain items T1-T8 exist');
+  assert(l23.rewards.gems === 5 && l23.rewards.energy === 40, 'Level 23 awards 5 Gems and 40 Energy');
+
+  // 4. Level 24: Moonhaven Settlement
+  const l24 = getLevelProgression(24);
+  assert(l24.unlocks.kingdomAreaId === 'moonhaven', 'Level 24 unlocks Moonhaven Settlement area');
+  assert(l24.rewards.gems === 0 && l24.rewards.energy === 40, 'Level 24 awards 0 Gems and 40 Energy');
+
+  // 5. Level 25: Chapter 3 Midpoint Milestone & Compendium Milestones
+  const l25 = getLevelProgression(25);
+  assert(l25.unlocks.mechanicName === 'Compendium Milestones', 'Level 25 unlocks Compendium Milestones');
+  assert(l25.rewards.gems === 15, 'Level 25 awards controlled midpoint milestone 15 Gems');
+  assert(l25.rewards.isFullEnergyRefill === true, 'Level 25 awards full energy refill milestone');
+  assert(l25.rewards.chestItemId === 'chest_golden', 'Level 25 awards Golden Chest');
+
+  // 6. Level 26: Altered Seals Investigation
+  const l26 = getLevelProgression(26);
+  assert(l26.unlocks.mechanicName === 'Altered Seals Investigation', 'Level 26 unlocks Altered Seals Investigation');
+  assert(l26.rewards.gems === 0 && l26.rewards.energy === 45, 'Level 26 awards 0 Gems and 45 Energy');
+
+  // 7. Level 27: Starlight Workshop & Lanterns Chain
+  const l27 = getLevelProgression(27);
+  assert(l27.unlocks.generatorId === 'gen_lantern_1', 'Level 27 unlocks Starlight Workshop (gen_lantern_1)');
+  assert(l27.unlocks.chainId === 'lanterns', 'Level 27 unlocks lanterns & beacons chain');
+  assert(l27.unlocks.kingdomAreaId === 'beacon_ridge', 'Level 27 unlocks Beacon Ridge kingdom area');
+  assert(l27.unlocks.npcId === 'elena', 'Level 27 introduces Elena Starlight Wayfinder');
+  assert(getUnlockedChainsForLevel(27).includes('lanterns'), 'Level 27 unlocked chains include lanterns');
+  assert(!getUnlockedChainsForLevel(26).includes('lanterns'), 'Level 26 does not include lanterns');
+  assert(Boolean(ITEMS['lantern_1'] && ITEMS['lantern_8']), 'Lanterns chain items T1-T8 exist');
+  assert(l27.rewards.gems === 5 && l27.rewards.energy === 45, 'Level 27 awards 5 Gems and 45 Energy');
+
+  // 8. Level 28: Outer Vault Expansion (8th inventory slot)
+  const l28 = getLevelProgression(28);
+  assert(l28.unlocks.inventorySlotIncrease === 1, 'Level 28 grants 8th inventory slot');
+  assert(l28.rewards.inventorySlotsAdded === 1, 'Level 28 records inventorySlotsAdded');
+  assert(l28.rewards.gems === 5 && l28.rewards.energy === 45, 'Level 28 awards 5 Gems and 45 Energy');
+
+  // 9. Level 29: Conduit Nexus
+  const l29 = getLevelProgression(29);
+  assert(l29.unlocks.kingdomAreaId === 'conduit_nexus', 'Level 29 unlocks Conduit Nexus kingdom area');
+  assert(l29.rewards.gems === 0 && l29.rewards.energy === 50, 'Level 29 awards 0 Gems and 50 Energy');
+
+  // 10. Level 30: Chapter 3 Milestone
+  const l30 = getLevelProgression(30);
+  assert(l30.isChapterMilestone === true, 'Level 30 is marked as Chapter 3 Milestone');
+  assert(l30.rewards.gems === 30, 'Level 30 awards 30 Gems');
+  assert(l30.rewards.isFullEnergyRefill === true, 'Level 30 awards full energy refill milestone');
+  assert(l30.rewards.chestItemId === 'chest_royal', 'Level 30 awards Royal Chapter Chest');
+  assert(BALANCE.CHAPTER_3_CTA_TEXT === 'Continue Your Journey', 'Chapter 3 CTA text is "Continue Your Journey"');
+
+  // Exact Gem array check for Chapter 3
+  const ch3ExpectedGems = [0, 0, 5, 0, 15, 0, 5, 5, 0, 30];
+  const ch3ActualGems: number[] = [];
+  for (let lvl = 21; lvl <= 30; lvl++) {
+    ch3ActualGems.push(getLevelProgression(lvl).rewards.gems);
+  }
+  assert(
+    JSON.stringify(ch3ActualGems) === JSON.stringify(ch3ExpectedGems),
+    `Chapter 3 gem rewards match exact specification: ${JSON.stringify(ch3ActualGems)}`
+  );
+
+  let ch3TotalGems = ch3ActualGems.reduce((a, b) => a + b, 0);
+  assert(ch3TotalGems === 60, `Chapter 3 total progression gems is 60 (actual: ${ch3TotalGems})`);
+
+  // Story Ambiguity checks for Chapter 3
+  for (let lvl = 21; lvl <= 30; lvl++) {
+    const prog = getLevelProgression(lvl);
+    assert(
+      !prog.storySnippet.toLowerCase().includes('evil villain') &&
+      !prog.storySnippet.toLowerCase().includes('the shadow lord'),
+      `Level ${lvl} story snippet does not dogmatically declare a single generic villain`
+    );
+  }
+}
+
+// TEST SUITE 10: Chapter 3 Orders & Production Integration
+console.log('\n[10] Testing Chapter 3 Orders & Production Integration:');
+{
+  const ch3Board: (BoardItem | null)[][] = [
+    [{ instanceId: 'g1', itemId: 'herb_1', isGenerator: true, generatorId: 'gen_garden_1', tileState: 'normal' }],
+    [{ instanceId: 'g2', itemId: 'provision_1', isGenerator: true, generatorId: 'gen_hearth_1', tileState: 'normal' }],
+    [{ instanceId: 'g3', itemId: 'lantern_1', isGenerator: true, generatorId: 'gen_lantern_1', tileState: 'normal' }],
+  ];
+
+  const pools = getProducibleItemPools(ch3Board, [], 27);
+  assert(pools.some(p => p.chainId === 'provisions'), 'Producible pools include provisions when hearth is present');
+  assert(pools.some(p => p.chainId === 'lanterns'), 'Producible pools include lanterns when lantern workshop is present');
+
+  const order = generateSafeRandomOrder(ch3Board, [], 28, []);
+  assert(order !== null && order.requirements.length > 0, 'Safe random order generated at Level 28');
+
+  // Level 28 migration slot check
+  const level28Save = JSON.stringify({
+    level: 28,
+    coins: 5000,
+    gems: 100,
+    energy: 100,
+    maxEnergy: 100,
+    inventory: [null, null, null, null, null, null, null],
+  });
+  const hydratedL28 = hydrateAndMigrateSave(null, level28Save, Date.now());
+  assert(hydratedL28.state.maxInventorySlots === 8, 'Level 28 save correctly grants 8 inventory slots');
+  assert(hydratedL28.state.inventory.length === 8, 'Inventory array length expands to 8');
+}
+
 console.log(`\n========================================`);
 console.log(`RESULTS: ${passedTests}/${totalTests} tests passed (${failedTests} failed)`);
 console.log(`========================================\n`);

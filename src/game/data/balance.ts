@@ -15,6 +15,7 @@ export const BALANCE = {
   STARTING_INVENTORY_SLOTS: 5,
   LEVEL_6_INVENTORY_SLOTS: 6,
   LEVEL_18_INVENTORY_SLOTS: 7,
+  LEVEL_28_INVENTORY_SLOTS: 8,
 
   // === TIMED BUBBLE SYSTEM ===
   BUBBLE_SPAWN_CHANCE_NORMAL: 0.04, // 4% chance on merge
@@ -67,6 +68,16 @@ export const BALANCE = {
     18: 6, // T3-T6 (+1 Inventory slot)
     19: 6, // T3-T6
     20: 7, // T3-T7 Chapter 2 Milestone
+    21: 5, // T3-T5 (Outer Provinces entry)
+    22: 6, // T3-T6
+    23: 6, // T3-T6 (New Provisions grace period)
+    24: 6, // T3-T6
+    25: 6, // T3-T6 (Compendium Milestones)
+    26: 6, // T3-T6
+    27: 6, // T3-T6 (New Lanterns grace period)
+    28: 6, // T4-T6 (+1 Inventory slot)
+    29: 7, // T4-T7
+    30: 7, // T4-T7 Chapter 3 Milestone
   } as Record<number, number>,
 
   // === ORDER REWARD CONSTANTS ===
@@ -94,6 +105,8 @@ export const BALANCE = {
   // === CHAPTER MILESTONES ===
   CHAPTER_1_MAX_LEVEL: 10,
   CHAPTER_2_MAX_LEVEL: 20,
+  CHAPTER_3_MAX_LEVEL: 30,
   CHAPTER_1_CTA_TEXT: 'Continue Your Journey',
   CHAPTER_2_CTA_TEXT: 'Continue Your Journey',
+  CHAPTER_3_CTA_TEXT: 'Continue Your Journey',
 };

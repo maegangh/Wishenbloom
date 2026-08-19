@@ -8,7 +8,7 @@ import { resolveExpiredBubbles } from './bubbleLogic';
 
 export const PRIMARY_STORAGE_KEY = 'wishenbloom_save_v1';
 export const LEGACY_STORAGE_KEY = 'mergevale_save_v1'; // Legacy key for backward compatibility
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 export const ENERGY_RECHARGE_SECONDS = 120; // 1 energy every 2 minutes
 
 /**
@@ -57,6 +57,7 @@ export function createDefaultInitialState(): GameState {
     discoveredItemIds: ['herb_1', 'chest_wooden'],
     claimedDiscoveryRewardIds: [],
     claimedLevelRewardIds: [],
+    claimedCompendiumMilestoneIds: [],
 
     tutorialStep: 0,
     isTutorialActive: true,
@@ -108,8 +109,8 @@ export function hydrateAndMigrateSave(
     const defaultState = createDefaultInitialState();
     const playerLevel = typeof parsed.level === 'number' && parsed.level > 0 ? parsed.level : 1;
     const maxInventorySlots = typeof parsed.maxInventorySlots === 'number'
-      ? parsed.maxInventorySlots
-      : playerLevel >= 6 ? 6 : 5;
+      ? Math.max(parsed.maxInventorySlots, playerLevel >= 28 ? 8 : playerLevel >= 18 ? 7 : playerLevel >= 6 ? 6 : 5)
+      : playerLevel >= 28 ? 8 : playerLevel >= 18 ? 7 : playerLevel >= 6 ? 6 : 5;
 
     // 1. Grid validation (Must be 9 rows x 7 cols)
     let validatedGrid: (BoardItem | null)[][] = defaultState.grid;
@@ -214,6 +215,7 @@ export function hydrateAndMigrateSave(
       discoveredItemIds: Array.isArray(parsed.discoveredItemIds) ? parsed.discoveredItemIds : defaultState.discoveredItemIds,
       claimedDiscoveryRewardIds: Array.isArray(parsed.claimedDiscoveryRewardIds) ? parsed.claimedDiscoveryRewardIds : [],
       claimedLevelRewardIds: Array.isArray(parsed.claimedLevelRewardIds) ? parsed.claimedLevelRewardIds : [],
+      claimedCompendiumMilestoneIds: Array.isArray(parsed.claimedCompendiumMilestoneIds) ? parsed.claimedCompendiumMilestoneIds : [],
 
       tutorialStep: typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep : 0,
       isTutorialActive: typeof parsed.isTutorialActive === 'boolean' ? parsed.isTutorialActive : true,

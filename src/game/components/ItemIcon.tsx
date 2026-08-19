@@ -491,6 +491,99 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
           </svg>
         );
 
+      // ===== PROVISIONS CHAIN =====
+      case 'provision_1': // Moonberry Cluster
+      case 'provision_2': // Honeyed Biscuit
+      case 'provision_3': // Herbal Tea
+      case 'provision_4': // Hearty Stew
+      case 'provision_5': // Spiced Pastry
+      case 'provision_6': // Traveler's Rations
+      case 'provision_7': // Bloom Nectar Feast
+      case 'provision_8': // Sovereign Banquet
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            <circle cx="50" cy="50" r="42" fill={color} opacity="0.25" />
+            {tier <= 2 ? (
+              <>
+                {/* Moonberry & Biscuits */}
+                <ellipse cx="50" cy="80" rx="30" ry="8" fill="#451a03" opacity="0.4" />
+                <circle cx="42" cy="55" r="14" fill="#fb923c" stroke="#ea580c" strokeWidth="2" />
+                <circle cx="58" cy="52" r="12" fill="#f97316" stroke="#c2410c" strokeWidth="2" />
+                <circle cx="50" cy="40" r="11" fill="#fdba74" stroke="#ea580c" strokeWidth="2" />
+                <circle cx="40" cy="48" r="3" fill="#ffffff" opacity="0.7" />
+              </>
+            ) : tier <= 4 ? (
+              <>
+                {/* Steaming Bowl / Teacup */}
+                <ellipse cx="50" cy="82" rx="32" ry="8" fill="#451a03" opacity="0.4" />
+                <path d="M 22 45 Q 50 45 78 45 L 70 78 Q 50 86 30 78 Z" fill="#b45309" stroke="#78350f" strokeWidth="2.5" />
+                <ellipse cx="50" cy="45" rx="28" ry="10" fill="#f97316" stroke="#d97706" strokeWidth="2" />
+                <circle cx="50" cy="45" rx="22" ry="6" fill="#fef08a" opacity="0.5" />
+                {/* Rising steam curls */}
+                <path d="M 40 34 Q 45 22 40 12" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.8" />
+                <path d="M 54 32 Q 60 20 56 10" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.8" />
+              </>
+            ) : (
+              <>
+                {/* Grand Platter & Feast */}
+                <ellipse cx="50" cy="78" rx="36" ry="12" fill="#eab308" stroke="#a16207" strokeWidth="3" />
+                <ellipse cx="50" cy="74" rx="30" ry="9" fill="#fef08a" />
+                {/* Gilded cloche or roast / roasted treats */}
+                <path d="M 26 68 Q 50 20 74 68 Z" fill={color} stroke="#ca8a04" strokeWidth="2.5" />
+                <circle cx="50" cy="22" r="6" fill="#facc15" stroke="#a16207" strokeWidth="2" />
+                <polygon points="50,14 53,20 60,21 55,26 57,32 50,28 43,32 45,26 40,21 47,20" fill="#fef08a" />
+              </>
+            )}
+          </svg>
+        );
+
+      // ===== LANTERNS & BEACONS CHAIN =====
+      case 'lantern_1': // Candle Stump
+      case 'lantern_2': // Tin Lantern
+      case 'lantern_3': // Brass Lamp
+      case 'lantern_4': // Starlight Beacon
+      case 'lantern_5': // Auroral Censer
+      case 'lantern_6': // Luminescent Phial
+      case 'lantern_7': // Celestial Lighthouse
+      case 'lantern_8': // Stellar Core Lantern
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            <circle cx="50" cy="50" r="44" fill={color} opacity="0.3" />
+            {tier <= 2 ? (
+              <>
+                {/* Tin / Candle Lantern */}
+                <rect x="32" y="36" width="36" height="46" rx="6" fill="#1e293b" stroke="#64748b" strokeWidth="2.5" />
+                <rect x="38" y="42" width="24" height="34" rx="3" fill="#fef08a" stroke="#ca8a04" strokeWidth="1.5" />
+                <circle cx="50" cy="58" r="7" fill="#f97316" />
+                <path d="M 38 36 Q 50 18 62 36" fill="none" stroke="#64748b" strokeWidth="3" strokeLinecap="round" />
+              </>
+            ) : tier <= 5 ? (
+              <>
+                {/* Brass Starlight Beacon / Auroral Censer */}
+                <path d="M 30 76 L 70 76 L 64 40 L 36 40 Z" fill="#0f766e" stroke="#14b8a6" strokeWidth="2.5" />
+                {/* Glass Chamber with glow */}
+                <polygon points="36,40 64,40 58,22 42,22" fill="#2dd4bf" opacity="0.85" stroke="#99f6e4" strokeWidth="1.5" />
+                <circle cx="50" cy="32" r="6" fill="#ffffff" />
+                <path d="M 40 22 Q 50 8 60 22" fill="none" stroke="#facc15" strokeWidth="2.5" strokeLinecap="round" />
+                <polygon points="50,48 53,56 61,57 55,62 57,70 50,65 43,70 45,62 39,57 47,56" fill="#fde047" />
+              </>
+            ) : (
+              <>
+                {/* Celestial Lighthouse / Stellar Core */}
+                <circle cx="50" cy="50" r="36" fill="#0369a1" stroke="#38bdf8" strokeWidth="2" />
+                <polygon points="50,12 82,50 50,88 18,50" fill="none" stroke="#facc15" strokeWidth="2" />
+                <circle cx="50" cy="50" r="18" fill="#fef08a" stroke="#ca8a04" strokeWidth="2" />
+                <circle cx="50" cy="50" r="10" fill="#ffffff" />
+                {/* Beams */}
+                <line x1="50" y1="8" x2="50" y2="24" stroke="#fde047" strokeWidth="3" strokeLinecap="round" />
+                <line x1="50" y1="76" x2="50" y2="92" stroke="#fde047" strokeWidth="3" strokeLinecap="round" />
+                <line x1="8" y1="50" x2="24" y2="50" stroke="#fde047" strokeWidth="3" strokeLinecap="round" />
+                <line x1="76" y1="50" x2="92" y2="50" stroke="#fde047" strokeWidth="3" strokeLinecap="round" />
+              </>
+            )}
+          </svg>
+        );
+
       // ===== GENERATORS =====
       case 'gen_garden':
         return (
@@ -622,6 +715,42 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             <polygon points="50,38 42,75 58,75" fill="#22d3ee" stroke="#ffffff" strokeWidth="1.5" />
             <polygon points="40,52 32,80 46,80" fill="#06b6d4" />
             <polygon points="60,52 54,80 68,80" fill="#67e8f9" />
+          </svg>
+        );
+
+      case 'gen_hearth':
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            {/* Stone oven hearth with chimney */}
+            <rect x="22" y="32" width="56" height="54" rx="6" fill="#78350f" stroke="#451a03" strokeWidth="3" />
+            <rect x="62" y="14" width="12" height="22" rx="2" fill="#451a03" />
+            {/* Hearth arched opening */}
+            <path d="M 32 86 L 32 52 Q 50 34 68 52 L 68 86 Z" fill="#1e1b4b" stroke="#451a03" strokeWidth="2" />
+            {/* Roaring orange cooking fire */}
+            <path d="M 50 82 C 40 82 36 68 44 54 C 47 62 52 56 50 48 C 60 56 58 82 50 82 Z" fill="#ea580c" />
+            <path d="M 50 82 C 45 82 42 74 46 64 C 48 68 52 65 50 58 C 56 65 54 82 50 82 Z" fill="#facc15" />
+            {/* Cast iron kettle hanging */}
+            <ellipse cx="50" cy="58" rx="10" ry="7" fill="#0f172a" stroke="#334155" strokeWidth="1.5" />
+            {/* Steam */}
+            <path d="M 48 46 Q 52 36 48 28" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.8" />
+          </svg>
+        );
+
+      case 'gen_lantern':
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
+            {/* Celestial Beacon Workshop / Astronavigation Post */}
+            <circle cx="50" cy="50" r="42" fill="#0c4a6e" opacity="0.3" />
+            {/* Tripod Brass / Stellar Stand */}
+            <line x1="30" y1="88" x2="44" y2="48" stroke="#0284c7" strokeWidth="3.5" strokeLinecap="round" />
+            <line x1="70" y1="88" x2="56" y2="48" stroke="#0284c7" strokeWidth="3.5" strokeLinecap="round" />
+            <line x1="50" y1="88" x2="50" y2="48" stroke="#0369a1" strokeWidth="3" strokeLinecap="round" />
+            {/* Floating Celestial Lantern Cage */}
+            <circle cx="50" cy="36" r="18" fill="#38bdf8" stroke="#facc15" strokeWidth="2.5" />
+            <circle cx="50" cy="36" r="10" fill="#fef08a" />
+            <polygon points="50,22 53,30 61,31 55,36 57,44 50,39 43,44 45,36 39,31 47,30" fill="#ffffff" />
+            {/* Lens rings */}
+            <ellipse cx="50" cy="36" rx="24" ry="8" fill="none" stroke="#67e8f9" strokeWidth="1.5" strokeDasharray="3,3" />
           </svg>
         );
 

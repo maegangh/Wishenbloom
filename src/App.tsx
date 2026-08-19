@@ -37,6 +37,7 @@ export default function App() {
     restoreKingdomStage,
     claimQuest,
     claimDiscoveryReward,
+    claimCompendiumMilestone,
     advanceTutorial,
     dismissTutorial,
     updateSettings,
@@ -123,7 +124,9 @@ export default function App() {
             <CollectionBook
               discoveredItemIds={state.discoveredItemIds}
               claimedDiscoveryRewardIds={state.claimedDiscoveryRewardIds}
+              claimedCompendiumMilestoneIds={state.claimedCompendiumMilestoneIds}
               onClaimReward={claimDiscoveryReward}
+              onClaimMilestone={claimCompendiumMilestone}
             />
           )}
 

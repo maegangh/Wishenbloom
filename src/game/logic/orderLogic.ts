@@ -183,6 +183,40 @@ export function getProducibleItemPools(
     });
   }
 
+  // 9. Bloomkeeper's Hearth -> Provisions
+  const hasHearth = Array.from(ownedGeneratorIds).some((id) => id.startsWith('gen_hearth'));
+  if (hasHearth) {
+    const maxHearthLevel = Math.max(
+      ...Array.from(ownedGeneratorIds)
+        .filter((id) => id.startsWith('gen_hearth'))
+        .map((id) => GENERATORS[id]?.level || 1)
+    );
+    const maxFeasibleTier = Math.min(levelTierCap, maxHearthLevel + 2);
+    pools.push({
+      itemPrefix: 'provision_',
+      chainId: 'provisions',
+      minTier: 1,
+      maxTier: Math.max(1, maxFeasibleTier),
+    });
+  }
+
+  // 10. Starlight Workshop -> Lanterns
+  const hasLantern = Array.from(ownedGeneratorIds).some((id) => id.startsWith('gen_lantern'));
+  if (hasLantern) {
+    const maxLanternLevel = Math.max(
+      ...Array.from(ownedGeneratorIds)
+        .filter((id) => id.startsWith('gen_lantern'))
+        .map((id) => GENERATORS[id]?.level || 1)
+    );
+    const maxFeasibleTier = Math.min(levelTierCap, maxLanternLevel + 2);
+    pools.push({
+      itemPrefix: 'lantern_',
+      chainId: 'lanterns',
+      minTier: 1,
+      maxTier: Math.max(1, maxFeasibleTier),
+    });
+  }
+
   // Fallback guard
   if (pools.length === 0) {
     pools.push({ itemPrefix: 'herb_', chainId: 'herbs', minTier: 1, maxTier: 2 });
@@ -301,6 +335,8 @@ export function generateSafeRandomOrder(
   else if (primaryPrefix === 'creature_') npcId = 'sylas';
   else if (primaryPrefix === 'textile_') npcId = 'celeste';
   else if (primaryPrefix === 'crystal_') npcId = 'gideon';
+  else if (primaryPrefix === 'provision_') npcId = 'bram';
+  else if (primaryPrefix === 'lantern_') npcId = 'elena';
   else if (primaryPrefix === 'coin_item_') npcId = 'aurelia';
   else if (Math.random() > 0.6) npcId = 'pip';
 
@@ -349,6 +385,16 @@ export function generateSafeRandomOrder(
       'The subterranean bedrock hums when these crystals resonate in harmony!',
       'An exquisite runestone specimen! The ancient leylines are stirring.',
       'My excavations confirm the conduits were fortified, not destroyed.',
+    ],
+    bram: [
+      'Fresh from the hearth! A piping hot feast keeps our spirits high and shoulders strong.',
+      'A pinch of moonberries and a dash of hearth spice makes everything taste like home.',
+      'The travelers past the Veiled Gate will feast royally tonight thanks to your harvest!',
+    ],
+    elena: [
+      'The mists in the outer passes are thick tonight, but this starlight lantern will pierce them cleanly.',
+      'Every beacon we light reveals another forgotten trail of our ancestors.',
+      'The celestial leyline aligns ahead—safe travels through the high ridge!',
     ],
   };
 
@@ -415,6 +461,8 @@ export function generateSpecialOrder(
   let npcId = 'aurelia';
   if (primaryPrefix === 'textile_') npcId = 'celeste';
   else if (primaryPrefix === 'crystal_') npcId = 'gideon';
+  else if (primaryPrefix === 'provision_') npcId = 'bram';
+  else if (primaryPrefix === 'lantern_') npcId = 'elena';
   else if (primaryPrefix === 'potion_') npcId = 'valerie';
   else if (primaryPrefix === 'book_') npcId = 'valerie';
 
@@ -427,6 +475,8 @@ export function generateSpecialOrder(
     celeste: 'The Atelier requires these exquisite materials to finish the Sovereign Coronation Tapestry.',
     gideon: 'An urgent subterranean survey requires resonant conduit samples. Immense royal bounties await!',
     valerie: 'The High Observatory must align these rare arcana to fortify the regional Bloom barriers.',
+    bram: 'The Royal Banquet in Moonhaven requires this supreme culinary spread immediately!',
+    elena: 'A perilous expedition across the foggy crags needs powerful celestial lanterns without delay!',
   };
 
   return {
