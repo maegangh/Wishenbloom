@@ -19,6 +19,7 @@ import { TutorialOverlay } from './game/components/TutorialOverlay';
 import { DailyRewardModal } from './game/components/DailyRewardModal';
 import { OfflineEnergyModal } from './game/components/OfflineEnergyModal';
 import { isDailyRewardClaimable } from './game/data/dailyRewards';
+import { registerAppLifecycle } from './game/logic/appLifecycle';
 
 export default function App() {
   const {
@@ -55,6 +56,8 @@ export default function App() {
     advanceTutorial,
     dismissTutorial,
     updateSettings,
+    saveNow,
+    handleAppResume,
     devAddCoins,
     devAddGems,
     devRefillEnergy,
@@ -76,6 +79,80 @@ export default function App() {
   const [showShop, setShowShop] = useState(false);
   const [showEnergyShop, setShowEnergyShop] = useState(false);
   const [showDailyRewards, setShowDailyRewards] = useState(false);
+
+  // App Lifecycle & Android Back Button registration
+  useEffect(() => {
+    const unregister = registerAppLifecycle({
+      onBackground: () => {
+        saveNow();
+      },
+      onResume: () => {
+        handleAppResume();
+      },
+      onBackButton: () => {
+        if (showShop) {
+          setShowShop(false);
+          return true;
+        }
+        if (showDailyRewards) {
+          setShowDailyRewards(false);
+          return true;
+        }
+        if (showSettings) {
+          setShowSettings(false);
+          return true;
+        }
+        if (showDev) {
+          setShowDev(false);
+          return true;
+        }
+        if (showEnergyShop) {
+          setShowEnergyShop(false);
+          return true;
+        }
+        if (discoveryPopupItem) {
+          setDiscoveryPopupItem(null);
+          return true;
+        }
+        if (levelUpData) {
+          setLevelUpData(null);
+          return true;
+        }
+        if (offlineEnergyRecovered > 0) {
+          setOfflineEnergyRecovered(0);
+          return true;
+        }
+        if (selectedCell) {
+          setSelectedCell(null);
+          return true;
+        }
+        if (activeTab !== 'board') {
+          setActiveTab('board');
+          return true;
+        }
+        return false;
+      },
+    });
+
+    return () => unregister();
+  }, [
+    showShop,
+    showDailyRewards,
+    showSettings,
+    showDev,
+    showEnergyShop,
+    discoveryPopupItem,
+    levelUpData,
+    offlineEnergyRecovered,
+    selectedCell,
+    activeTab,
+    saveNow,
+    handleAppResume,
+    setSelectedCell,
+    setDiscoveryPopupItem,
+    setLevelUpData,
+    setOfflineEnergyRecovered,
+  ]);
 
   const hasUnclaimedDailyReward = isDailyRewardClaimable(state.lastDailyRewardClaimDate);
 

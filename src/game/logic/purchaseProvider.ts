@@ -1,5 +1,6 @@
 import { StoreProduct } from '../types';
 import { ALL_STORE_PRODUCTS, getStoreProduct, STARTER_WELCOME_PACK } from '../data/storeProducts';
+import { getAppEnvironment, getPlatformType } from '../config/version';
 
 export interface PurchaseResult {
   success: boolean;
@@ -22,6 +23,7 @@ export interface PurchaseProvider {
   getProducts(): Promise<StoreProduct[]>;
   purchase(productIdOrSku: string): Promise<PurchaseResult>;
   restorePurchases(ownedOneTimeSkus: string[]): Promise<string[]>;
+  isMock(): boolean;
 }
 
 /**
@@ -100,5 +102,134 @@ export class MockPurchaseProvider implements PurchaseProvider {
   }
 }
 
-// Export singleton instance of mock purchase provider
+/**
+ * DisabledPurchaseProvider
+ *
+ * Secure provider used when live native store billing is not yet configured or disabled in production.
+ * NEVER grants free premium currency or fake entitlements.
+ */
+export class DisabledPurchaseProvider implements PurchaseProvider {
+  async initialize(): Promise<boolean> {
+    return true;
+  }
+
+  async getProducts(): Promise<StoreProduct[]> {
+    return ALL_STORE_PRODUCTS;
+  }
+
+  async purchase(productIdOrSku: string): Promise<PurchaseResult> {
+    return {
+      success: false,
+      sku: productIdOrSku,
+      error: 'Store billing is currently undergoing maintenance. In-app purchases are temporarily unavailable in this build.',
+      isMockTransaction: false,
+    };
+  }
+
+  async restorePurchases(): Promise<string[]> {
+    return [];
+  }
+
+  isMock(): boolean {
+    return false;
+  }
+}
+
+/**
+ * GooglePlayPurchaseProvider (Stub / Architecture Preparation)
+ *
+ * Designed to bind to Google Play Billing Client in native Android release builds.
+ */
+export class GooglePlayPurchaseProvider implements PurchaseProvider {
+  async initialize(): Promise<boolean> {
+    return false;
+  }
+
+  async getProducts(): Promise<StoreProduct[]> {
+    return ALL_STORE_PRODUCTS;
+  }
+
+  async purchase(productIdOrSku: string): Promise<PurchaseResult> {
+    return {
+      success: false,
+      sku: productIdOrSku,
+      error: 'Google Play Billing is not configured in this build.',
+      isMockTransaction: false,
+    };
+  }
+
+  async restorePurchases(): Promise<string[]> {
+    return [];
+  }
+
+  isMock(): boolean {
+    return false;
+  }
+}
+
+/**
+ * AppleStorePurchaseProvider (Stub / Architecture Preparation)
+ *
+ * Designed to bind to Apple StoreKit 2 in native iOS release builds.
+ */
+export class AppleStorePurchaseProvider implements PurchaseProvider {
+  async initialize(): Promise<boolean> {
+    return false;
+  }
+
+  async getProducts(): Promise<StoreProduct[]> {
+    return ALL_STORE_PRODUCTS;
+  }
+
+  async purchase(productIdOrSku: string): Promise<PurchaseResult> {
+    return {
+      success: false,
+      sku: productIdOrSku,
+      error: 'Apple StoreKit is not configured in this build.',
+      isMockTransaction: false,
+    };
+  }
+
+  async restorePurchases(): Promise<string[]> {
+    return [];
+  }
+
+  isMock(): boolean {
+    return false;
+  }
+}
+
+// Singleton instances
 export const mockPurchaseProvider = new MockPurchaseProvider();
+export const disabledPurchaseProvider = new DisabledPurchaseProvider();
+export const googlePlayPurchaseProvider = new GooglePlayPurchaseProvider();
+export const appleStorePurchaseProvider = new AppleStorePurchaseProvider();
+
+let customPurchaseProvider: PurchaseProvider | null = null;
+
+/**
+ * Resolves the appropriate purchase provider based on environment and platform.
+ * Ensures production builds NEVER silently fall back to mock purchases.
+ */
+export function getActivePurchaseProvider(): PurchaseProvider {
+  if (customPurchaseProvider) {
+    return customPurchaseProvider;
+  }
+
+  const env = getAppEnvironment();
+  const platform = getPlatformType();
+
+  // In production builds:
+  if (env === 'production') {
+    if (platform === 'android') return googlePlayPurchaseProvider;
+    if (platform === 'ios') return appleStorePurchaseProvider;
+    return disabledPurchaseProvider;
+  }
+
+  // In development and beta:
+  return mockPurchaseProvider;
+}
+
+export function setActivePurchaseProvider(provider: PurchaseProvider | null): void {
+  customPurchaseProvider = provider;
+}

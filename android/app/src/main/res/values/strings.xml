@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wishenbloom</string>
+    <string name="title_activity_main">Wishenbloom</string>
+    <string name="package_name">com.mythiccrownstudios.wishenbloom</string>
+    <string name="custom_url_scheme">com.mythiccrownstudios.wishenbloom</string>
+</resources>

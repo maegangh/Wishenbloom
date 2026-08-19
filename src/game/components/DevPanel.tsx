@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { X, Wrench, Plus, RefreshCw, Zap, Coins, Gem, Sparkles, Trash2, Activity, LayoutGrid, Award, BookOpen, Calendar, Gift, CheckCircle2 } from 'lucide-react';
+import { X, Wrench, Plus, RefreshCw, Zap, Coins, Gem, Sparkles, Trash2, Activity, LayoutGrid, Award, BookOpen, Calendar, Gift, CheckCircle2, Smartphone } from 'lucide-react';
 import { ITEMS } from '../data/items';
 import { GameState } from '../types';
 import { getLevelProgression, getUnlockedChainsForLevel } from '../data/progression';
+import { APP_IDENTITY, getAppEnvironment, getPlatformType } from '../config/version';
+import { getActivePurchaseProvider } from '../logic/purchaseProvider';
+import { CURRENT_SCHEMA_VERSION } from '../logic/saveMigration';
 
 interface DevPanelProps {
   gameState?: GameState;
@@ -73,6 +76,38 @@ export const DevPanel: React.FC<DevPanelProps> = ({
           >
             <X className="w-4 h-4" />
           </button>
+        </div>
+
+        {/* Mobile Beta & Build Readiness Info */}
+        <div className="py-2.5 px-3 my-3 rounded-2xl bg-indigo-950/60 border border-indigo-500/30 text-left space-y-1.5">
+          <div className="flex items-center justify-between text-[11px] font-bold text-indigo-300 uppercase tracking-wider">
+            <span className="flex items-center gap-1">
+              <Smartphone className="w-3.5 h-3.5 text-indigo-400" /> Mobile Environment
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-indigo-500/20 text-[10px] text-indigo-200 border border-indigo-400/30">
+              {getAppEnvironment().toUpperCase()}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-1.5 text-[11px] text-stone-300">
+            <div>
+              <span className="text-stone-400 block text-[9px]">Platform:</span>
+              <span className="font-semibold text-white uppercase">{getPlatformType()}</span>
+            </div>
+            <div>
+              <span className="text-stone-400 block text-[9px]">App Version:</span>
+              <span className="font-semibold text-white">v{APP_IDENTITY.version} (b{APP_IDENTITY.androidVersionCode})</span>
+            </div>
+            <div>
+              <span className="text-stone-400 block text-[9px]">Purchase Provider:</span>
+              <span className="font-semibold text-amber-300">
+                {getActivePurchaseProvider().isMock() ? 'MOCK DEV' : 'PRODUCTION BILLING'}
+              </span>
+            </div>
+            <div>
+              <span className="text-stone-400 block text-[9px]">Save Schema:</span>
+              <span className="font-semibold text-emerald-300">v{CURRENT_SCHEMA_VERSION}</span>
+            </div>
+          </div>
         </div>
 
         {/* Live Early Game Balance & Telemetry Panel */}

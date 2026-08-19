@@ -64,7 +64,9 @@ import {
   COIN_SHOP_PRODUCTS,
   STARTER_WELCOME_PACK,
 } from '../data/storeProducts';
-import { mockPurchaseProvider } from '../logic/purchaseProvider';
+import { getActivePurchaseProvider } from '../logic/purchaseProvider';
+import { getStorageProvider } from '../logic/storageProvider';
+import { haptics } from '../logic/hapticsProvider';
 import {
   PRIMARY_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
@@ -77,8 +79,9 @@ export function useGameState() {
 
   const [state, setState] = useState<GameState>(() => {
     try {
-      const primary = localStorage.getItem(PRIMARY_STORAGE_KEY);
-      const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+      const storage = getStorageProvider();
+      const primary = storage.getItemSync(PRIMARY_STORAGE_KEY);
+      const legacy = storage.getItemSync(LEGACY_STORAGE_KEY);
       const { state: hydrated, isMigratedFromLegacy, recoveredOfflineEnergy } = hydrateAndMigrateSave(primary, legacy);
       
       if (recoveredOfflineEnergy && recoveredOfflineEnergy > 0) {
@@ -87,7 +90,7 @@ export function useGameState() {
 
       if (isMigratedFromLegacy) {
         // One-time save conversion from legacy to primary key
-        localStorage.setItem(PRIMARY_STORAGE_KEY, JSON.stringify(hydrated));
+        storage.setItemSync(PRIMARY_STORAGE_KEY, JSON.stringify(hydrated));
       }
       return hydrated;
     } catch (e) {
@@ -113,20 +116,78 @@ export function useGameState() {
   const [discoveryPopupItem, setDiscoveryPopupItem] = useState<ItemDef | null>(null);
   const [floatingText, setFloatingText] = useState<{ id: string; text: string; color: string; x: number; y: number }[]>([]);
 
-  // Keep state ref for intervals
+  // Keep state ref for intervals and lifecycle events
   const stateRef = useRef(state);
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
+  // Immediate synchronous save helper for lifecycle events
+  const saveNow = useCallback(() => {
+    try {
+      getStorageProvider().setItemSync(PRIMARY_STORAGE_KEY, JSON.stringify({ ...stateRef.current, lastSavedAt: Date.now() }));
+    } catch (e) {
+      console.error('Failed to save state to storage:', e);
+    }
+  }, []);
+
   // Auto-save on meaningful state changes
   useEffect(() => {
-    try {
-      localStorage.setItem(PRIMARY_STORAGE_KEY, JSON.stringify({ ...state, lastSavedAt: Date.now() }));
-    } catch (e) {
-      console.error('Failed to save to localStorage:', e);
-    }
-  }, [state]);
+    saveNow();
+  }, [state, saveNow]);
+
+  // App Foreground Resume handler (re-evaluates energy recharge, daily UTC rollover, and expired bubbles)
+  const handleAppResume = useCallback(() => {
+    const now = Date.now();
+    setState((current) => {
+      // 1. Check Bubble Expiration
+      const bubbleResult = resolveExpiredBubbles(current.grid, now);
+      let updatedGrid = bubbleResult.grid;
+      let gridChanged = bubbleResult.hasChanged;
+
+      // 2. Check Energy Recharge up to maxEnergy (100)
+      let newEnergy = current.energy;
+      let newLastEnergyRechargeAt = current.lastEnergyRechargeAt;
+      let energyChanged = false;
+
+      if (current.energy < current.maxEnergy && current.lastEnergyRechargeAt) {
+        const elapsedSec = (now - current.lastEnergyRechargeAt) / 1000;
+        if (elapsedSec >= ENERGY_RECHARGE_SECONDS) {
+          const energyToAdd = Math.floor(elapsedSec / ENERGY_RECHARGE_SECONDS);
+          newEnergy = Math.min(current.maxEnergy, current.energy + energyToAdd);
+          newLastEnergyRechargeAt = now - ((elapsedSec % ENERGY_RECHARGE_SECONDS) * 1000);
+          energyChanged = true;
+        }
+      }
+
+      // 3. Check UTC Day boundary for Daily Tasks
+      const todayUtc = getUtcDateKey(now);
+      let tasksChanged = false;
+      let newDailyTasks = current.dailyTasks;
+      let newDailyTasksDateKey = current.dailyTasksDateKey;
+      let newDailyCompletionClaimed = current.dailyCompletionClaimed;
+
+      if (current.dailyTasksDateKey !== todayUtc) {
+        newDailyTasksDateKey = todayUtc;
+        newDailyTasks = generateDailyTasksForDate(current.grid, current.inventory, current.level, todayUtc);
+        newDailyCompletionClaimed = false;
+        tasksChanged = true;
+      }
+
+      if (gridChanged || energyChanged || tasksChanged) {
+        return {
+          ...current,
+          grid: gridChanged ? updatedGrid : current.grid,
+          energy: energyChanged ? newEnergy : current.energy,
+          lastEnergyRechargeAt: energyChanged ? newLastEnergyRechargeAt : current.lastEnergyRechargeAt,
+          dailyTasksDateKey: tasksChanged ? newDailyTasksDateKey : current.dailyTasksDateKey,
+          dailyTasks: tasksChanged ? newDailyTasks : current.dailyTasks,
+          dailyCompletionClaimed: tasksChanged ? newDailyCompletionClaimed : current.dailyCompletionClaimed,
+        };
+      }
+      return current;
+    });
+  }, []);
 
   // 1-Second Centralized Ticker for:
   // - Real-time energy recharge
@@ -1286,8 +1347,9 @@ export function useGameState() {
       return { success: false, error: `You already own this one-time product (${product.displayName}).` };
     }
 
-    // Call MockPurchaseProvider to simulate store processing
-    const purchaseResult = await mockPurchaseProvider.purchase(product.sku);
+    // Call Active Purchase Provider to simulate store processing
+    const provider = getActivePurchaseProvider();
+    const purchaseResult = await provider.purchase(product.sku);
     if (!purchaseResult.success || !purchaseResult.transactionId) {
       return { success: false, error: purchaseResult.error || 'Store purchase simulation failed.' };
     }
@@ -1384,7 +1446,8 @@ export function useGameState() {
 
   // Restore Purchases
   const restorePurchases = useCallback(async (): Promise<{ restoredSkus: string[]; message: string }> => {
-    const restored = await mockPurchaseProvider.restorePurchases(state.purchasedOneTimeProductIds);
+    const provider = getActivePurchaseProvider();
+    const restored = await provider.restorePurchases(state.purchasedOneTimeProductIds);
     return {
       restoredSkus: restored,
       message: restored.length > 0
@@ -1582,6 +1645,8 @@ export function useGameState() {
     dismissTutorial,
     grantXP,
     updateSettings,
+    saveNow,
+    handleAppResume,
     // Dev helpers
     devAddCoins,
     devAddGems,

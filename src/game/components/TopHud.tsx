@@ -37,7 +37,7 @@ export const TopHud: React.FC<TopHudProps> = ({
   const hasPendingRewards = (state.pendingRewards || []).length > 0;
 
   return (
-    <header className="w-full bg-slate-900/90 backdrop-blur-md border-b border-amber-500/20 px-3 py-2 text-white select-none z-30 shadow-md">
+    <header className="w-full bg-slate-900/90 backdrop-blur-md border-b border-amber-500/20 px-3 py-2 safe-top text-white select-none z-30 shadow-md">
       <div className="flex items-center justify-between gap-2 max-w-lg mx-auto">
         {/* Level & XP */}
         <div
