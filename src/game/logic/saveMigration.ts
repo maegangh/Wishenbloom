@@ -2,7 +2,7 @@ import { GameState, BoardItem } from '../types';
 import { INITIAL_ORDERS } from '../data/npcs';
 import { INITIAL_KINGDOM_AREAS } from '../data/kingdom';
 import { INITIAL_QUESTS } from '../data/quests';
-import { LEVEL_PROGRESSION } from '../data/progression';
+import { LEVEL_PROGRESSION, CURRENT_MAX_PLAYER_LEVEL } from '../data/progression';
 import { GRID_ROWS, GRID_COLS } from './boardLogic';
 import { resolveExpiredBubbles } from './bubbleLogic';
 
@@ -107,7 +107,8 @@ export function hydrateAndMigrateSave(
     }
 
     const defaultState = createDefaultInitialState();
-    const playerLevel = typeof parsed.level === 'number' && parsed.level > 0 ? parsed.level : 1;
+    const rawLevel = typeof parsed.level === 'number' && parsed.level > 0 ? Math.floor(parsed.level) : 1;
+    const playerLevel = Math.min(CURRENT_MAX_PLAYER_LEVEL, Math.max(1, rawLevel));
     const maxInventorySlots = typeof parsed.maxInventorySlots === 'number'
       ? Math.max(parsed.maxInventorySlots, playerLevel >= 28 ? 8 : playerLevel >= 18 ? 7 : playerLevel >= 6 ? 6 : 5)
       : playerLevel >= 28 ? 8 : playerLevel >= 18 ? 7 : playerLevel >= 6 ? 6 : 5;
@@ -185,13 +186,15 @@ export function hydrateAndMigrateSave(
       });
     }
 
-    const defaultProg = LEVEL_PROGRESSION[playerLevel];
-    const defaultXpToNext = defaultProg?.xpRequired || Math.round(50 * Math.pow(1.35, playerLevel - 1));
+    const defaultProg = LEVEL_PROGRESSION[playerLevel] || LEVEL_PROGRESSION[1];
+    const defaultXpToNext = defaultProg.xpRequired;
+    const rawXp = typeof parsed.xp === 'number' ? parsed.xp : 0;
+    const safeXp = playerLevel >= CURRENT_MAX_PLAYER_LEVEL ? Math.min(defaultXpToNext, rawXp) : rawXp;
 
     const hydrated: GameState = {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       level: playerLevel,
-      xp: typeof parsed.xp === 'number' ? parsed.xp : 0,
+      xp: safeXp,
       xpToNextLevel: typeof parsed.xpToNextLevel === 'number' ? parsed.xpToNextLevel : defaultXpToNext,
       coins: typeof parsed.coins === 'number' ? parsed.coins : 300,
       gems: typeof parsed.gems === 'number' ? parsed.gems : 20,

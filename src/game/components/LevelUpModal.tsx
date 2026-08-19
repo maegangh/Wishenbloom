@@ -17,8 +17,13 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   rewards,
   onClose,
 }) => {
-  const isChapterMilestone = level === 10 || level === 20 || progression?.isChapterMilestone;
-  const milestoneLabel = level === 20 ? 'Chapter 2 Milestone' : 'Chapter 1 Milestone';
+  const isChapterMilestone = level === 10 || level === 20 || level === 30 || progression?.isChapterMilestone;
+  const milestoneLabel =
+    level === 30
+      ? 'Chapter 3 Milestone'
+      : level === 20
+      ? 'Chapter 2 Milestone'
+      : 'Chapter 1 Milestone';
   const unlocks = progression?.unlocks;
 
   return (
@@ -173,7 +178,13 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
               : 'bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 shadow-amber-500/30'
           }`}
         >
-          {isChapterMilestone ? BALANCE.CHAPTER_2_CTA_TEXT : 'Claim & Continue Merging'}
+          {isChapterMilestone
+            ? level === 30
+              ? BALANCE.CHAPTER_3_CTA_TEXT
+              : level === 20
+              ? BALANCE.CHAPTER_2_CTA_TEXT
+              : BALANCE.CHAPTER_1_CTA_TEXT
+            : 'Claim & Continue Merging'}
         </button>
       </div>
     </div>

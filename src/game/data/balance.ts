@@ -102,11 +102,18 @@ export const BALANCE = {
   SPECIAL_ORDER_COIN_MULTIPLIER: 2.0,
   SPECIAL_ORDER_SPAWN_CHANCE_ON_ORDER: 0.3,
 
-  // === CHAPTER MILESTONES ===
+  // === CHAPTER MILESTONES & LEVEL CAP ===
+  CURRENT_MAX_PLAYER_LEVEL: 30,
   CHAPTER_1_MAX_LEVEL: 10,
   CHAPTER_2_MAX_LEVEL: 20,
   CHAPTER_3_MAX_LEVEL: 30,
   CHAPTER_1_CTA_TEXT: 'Continue Your Journey',
   CHAPTER_2_CTA_TEXT: 'Continue Your Journey',
   CHAPTER_3_CTA_TEXT: 'Continue Your Journey',
+
+  // === POST-CAP PRESENTATION STRINGS ===
+  POST_CAP_TITLE: 'Level 30',
+  POST_CAP_SUBTITLE: 'Current Adventure Complete',
+  POST_CAP_XP_LABEL: 'Adventure Complete',
+  POST_CAP_JOURNEY_TEXT: 'Your journey through the restored provinces continues. More adventures are coming to Wishenbloom.',
 };

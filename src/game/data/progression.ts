@@ -36,6 +36,8 @@ export interface LevelProgressionDef {
   isChapterMilestone?: boolean;
 }
 
+export const CURRENT_MAX_PLAYER_LEVEL = 30;
+
 export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
   1: {
     level: 1,
@@ -689,29 +691,22 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
 };
 
 /**
- * Returns progression definition for a given level (or extrapolated if beyond level 30)
+ * Returns whether the player has reached or exceeded the current content cap
+ */
+export function isPlayerAtMaxLevel(level: number): boolean {
+  return level >= CURRENT_MAX_PLAYER_LEVEL;
+}
+
+/**
+ * Returns progression definition for a given level, clamped to the currently authored max level (30).
+ * Does NOT generate procedural or unauthored rewards for levels beyond CURRENT_MAX_PLAYER_LEVEL.
  */
 export function getLevelProgression(level: number): LevelProgressionDef {
-  if (LEVEL_PROGRESSION[level]) {
-    return LEVEL_PROGRESSION[level];
+  const safeLevel = Math.min(Math.max(1, Math.floor(level)), CURRENT_MAX_PLAYER_LEVEL);
+  if (LEVEL_PROGRESSION[safeLevel]) {
+    return LEVEL_PROGRESSION[safeLevel];
   }
-
-  // Graceful fallback / extrapolation for level 31+
-  const xpRequired = Math.round(50000 * Math.pow(1.2, level - 30));
-  return {
-    level,
-    xpRequired,
-    cumulativeXp: 289600 + (level - 30) * 50000,
-    title: `Master Bloomkeeper ${level}`,
-    subtitle: 'Guardian of the Realm',
-    storySnippet: 'Your mastery over the Bloom deepens as you explore new frontiers of Wishenbloom.',
-    unlocks: {},
-    rewards: {
-      coins: level * 100,
-      gems: Math.floor(level * 2.5) + 5,
-      energy: 100,
-    },
-  };
+  return LEVEL_PROGRESSION[1];
 }
 
 /**

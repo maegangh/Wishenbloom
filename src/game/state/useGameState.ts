@@ -13,6 +13,8 @@ import { COMPENDIUM_MILESTONES } from '../data/compendiumMilestones';
 import {
   LEVEL_PROGRESSION,
   getLevelProgression,
+  CURRENT_MAX_PLAYER_LEVEL,
+  isPlayerAtMaxLevel,
   LevelProgressionDef,
   LevelRewards,
 } from '../data/progression';
@@ -198,6 +200,16 @@ export function useGameState() {
   // Centralized Helper to add XP and evaluate level-up progression
   const grantXP = useCallback((xpGain: number) => {
     setState((prev) => {
+      // 1. If player is already at or above the authored content cap (Level 30),
+      // strictly clamp XP and do NOT advance level, grant rewards, or trigger modal.
+      if (prev.level >= CURRENT_MAX_PLAYER_LEVEL) {
+        const cappedXp = Math.min(prev.xpToNextLevel, prev.xp + xpGain);
+        return {
+          ...prev,
+          xp: cappedXp,
+        };
+      }
+
       let newXp = prev.xp + xpGain;
       let newLevel = prev.level;
       let newXpToNext = prev.xpToNextLevel;
@@ -215,7 +227,7 @@ export function useGameState() {
       let newInventory = [...prev.inventory];
       let maxSlots = prev.maxInventorySlots;
 
-      while (newXp >= newXpToNext) {
+      while (newXp >= newXpToNext && newLevel < CURRENT_MAX_PLAYER_LEVEL) {
         newXp -= newXpToNext;
         newLevel += 1;
         const progDef = getLevelProgression(newLevel);
@@ -265,7 +277,7 @@ export function useGameState() {
             }
           }
 
-          // 2. Check Inventory Slot Expansion (Level 6 & Level 18)
+          // 2. Check Inventory Slot Expansion (Level 6, 18, 28)
           if (progDef.rewards.inventorySlotsAdded || progDef.unlocks.inventorySlotIncrease) {
             const addSlots = progDef.rewards.inventorySlotsAdded || progDef.unlocks.inventorySlotIncrease || 1;
             maxSlots += addSlots;
@@ -275,7 +287,7 @@ export function useGameState() {
             accumulatedInvSlots += addSlots;
           }
 
-          // 3. Check Special Chest Reward (e.g. Golden Chest at Level 10/15, Royal at Level 20)
+          // 3. Check Special Chest Reward (e.g. Golden Chest at Level 10/15, Royal at Level 20/30)
           if (progDef.rewards.chestItemId) {
             spawnItemOnFirstEmpty(newGrid, {
               instanceId: `reward_${progDef.rewards.chestItemId}_${Date.now()}`,
@@ -284,6 +296,11 @@ export function useGameState() {
             });
           }
         }
+      }
+
+      // If capped at max level, clamp leftover XP to requirement boundary
+      if (newLevel >= CURRENT_MAX_PLAYER_LEVEL) {
+        newXp = Math.min(newXp, newXpToNext);
       }
 
       if (leveledUp && lastProgDef) {

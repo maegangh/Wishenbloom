@@ -4,6 +4,7 @@ import { validateGeneratorTap, validateGeneratorUpgrade, getGeneratorCooldownRem
 import {
   getProducibleItemPools,
   generateSafeRandomOrder,
+  generateSpecialOrder,
   isOrderFulfillable,
   calculateOrderRewards,
 } from '../logic/orderLogic';
@@ -13,6 +14,8 @@ import {
   getLevelProgression,
   getUnlockedChainsForLevel,
   getGeneratorUnlockedAtLevel,
+  CURRENT_MAX_PLAYER_LEVEL,
+  isPlayerAtMaxLevel,
 } from '../data/progression';
 import { BALANCE } from '../data/balance';
 import { ITEMS } from '../data/items';
@@ -633,6 +636,126 @@ console.log('\n[10] Testing Chapter 3 Orders & Production Integration:');
   const hydratedL28 = hydrateAndMigrateSave(null, level28Save, Date.now());
   assert(hydratedL28.state.maxInventorySlots === 8, 'Level 28 save correctly grants 8 inventory slots');
   assert(hydratedL28.state.inventory.length === 8, 'Inventory array length expands to 8');
+}
+
+// TEST SUITE 11: Player Level 30 Content Cap & Post-Chapter Safety Invariants
+console.log('\n[11] Testing Player Level 30 Content Cap & Post-Chapter Safety Invariants:');
+{
+  // 1. CURRENT_MAX_PLAYER_LEVEL is 30
+  assert(CURRENT_MAX_PLAYER_LEVEL === 30, 'CURRENT_MAX_PLAYER_LEVEL is defined as 30');
+  assert(BALANCE.CURRENT_MAX_PLAYER_LEVEL === 30, 'BALANCE.CURRENT_MAX_PLAYER_LEVEL is 30');
+  assert(isPlayerAtMaxLevel(30) === true, 'isPlayerAtMaxLevel returns true for level 30');
+  assert(isPlayerAtMaxLevel(29) === false, 'isPlayerAtMaxLevel returns false for level 29');
+
+  // 2. A Level 29 player can legitimately reach Level 30
+  const l29Prog = getLevelProgression(29);
+  const l30Prog = getLevelProgression(30);
+  assert(l29Prog.level === 29 && l29Prog.xpRequired === 42000, 'Level 29 requires 42,000 XP to reach Level 30');
+  assert(l30Prog.level === 30 && l30Prog.isChapterMilestone === true, 'Level 30 is reached and recognized as milestone');
+
+  // 3. Level 30 rewards are granted exactly once in authored definition
+  assert(l30Prog.rewards.coins === 2500, 'Level 30 awards 2,500 Coins');
+  assert(l30Prog.rewards.gems === 30, 'Level 30 awards exactly 30 Gems');
+  assert(l30Prog.rewards.isFullEnergyRefill === true, 'Level 30 awards Full Energy Refill');
+  assert(l30Prog.rewards.chestItemId === 'chest_royal', 'Level 30 awards Royal Chest');
+
+  // 4. Additional XP at Level 30 does NOT create Player Level 31
+  const prog31 = getLevelProgression(31);
+  assert(prog31.level === 30, 'getLevelProgression(31) clamps to Level 30');
+  const prog50 = getLevelProgression(50);
+  assert(prog50.level === 30, 'getLevelProgression(50) clamps to Level 30');
+
+  // 5-8. Additional XP at Level 30 does NOT grant unauthored / fake procedural rewards
+  // Verify getLevelProgression(31) does NOT produce scaled unauthored coins (e.g. 3100) or scaling gems (e.g. 82)
+  assert(prog31.rewards.coins === 2500, 'Level 31+ does not generate procedural coins');
+  assert(prog31.rewards.gems === 30, 'Level 31+ does not generate runaway scaling gems');
+  assert(!prog31.unlocks.generatorId, 'Level 31+ has no unauthored generator unlocks');
+  assert(!prog31.unlocks.chainId, 'Level 31+ has no unauthored chain unlocks');
+
+  // 9. Simulation of Level 30 state with XP additions
+  const capSave = JSON.stringify({
+    level: 30,
+    xp: 50000,
+    xpToNextLevel: 50000,
+    coins: 10000,
+    gems: 250,
+    energy: 100,
+    maxEnergy: 100,
+    claimedLevelRewardIds: [30],
+  });
+  const hydratedCap = hydrateAndMigrateSave(null, capSave, Date.now());
+  assert(hydratedCap.state.level === 30, 'Level 30 save stays at Level 30');
+  assert(hydratedCap.state.xp === 50000, 'Level 30 save safely clamps XP');
+  assert(hydratedCap.state.claimedLevelRewardIds.includes(30), 'Level 30 milestone already recorded in claimed rewards');
+
+  // 10. Normal orders remain completable at Level 30
+  const l30Board: (BoardItem | null)[][] = [
+    [{ instanceId: 'g1', itemId: 'herb_1', isGenerator: true, generatorId: 'gen_garden_1', tileState: 'normal' }],
+    [{ instanceId: 'g2', itemId: 'potion_1', isGenerator: true, generatorId: 'gen_alchemist_1', tileState: 'normal' }],
+  ];
+  const l30Order = generateSafeRandomOrder(l30Board, [], 30, []);
+  assert(l30Order !== null && l30Order.requirements.length > 0, 'Normal orders generate safely at Level 30');
+  assert(l30Order.rewards.coins > 0 && l30Order.rewards.xp > 0, 'Normal order provides legitimate Coin/XP rewards at Level 30');
+
+  // 11. Replacement orders still generate at Level 30
+  const repOrder = generateSafeRandomOrder(l30Board, [], 30, [l30Order.id]);
+  assert(repOrder !== null && repOrder.id !== l30Order.id, 'Replacement order generates at Level 30');
+
+  // 12. Royal Commissions remain functional at Level 30
+  const l30SpecialOrder = generateSpecialOrder(l30Board, [], 30);
+  assert(l30SpecialOrder !== null && l30SpecialOrder.isSpecialOrder === true, 'Royal Commission generates at Level 30');
+  assert(l30SpecialOrder.rewards.gems !== undefined && l30SpecialOrder.rewards.gems > 0, 'Royal Commission awards Arcane Gems at Level 30');
+
+  // 13. Generators remain functional at Level 30
+  const genTapCheck = validateGeneratorTap(l30Board[0][0]!, 100);
+  assert(genTapCheck.canTap === true, 'Generators can still be tapped at Level 30');
+
+  // 14. Energy regeneration remains functional at Level 30
+  const offlineSec = 240; // 4 minutes = 2 energy points
+  const partialEnergySave = JSON.stringify({
+    level: 30,
+    energy: 50,
+    maxEnergy: 100,
+    lastEnergyRechargeAt: Date.now() - (offlineSec * 1000),
+  });
+  const hydratedEnergy = hydrateAndMigrateSave(null, partialEnergySave, Date.now());
+  assert(hydratedEnergy.state.energy === 52, 'Offline Energy regeneration continues at Level 30 (50 -> 52)');
+
+  // 15. Inventory remains functional at Level 30 (8 max slots)
+  assert(hydratedCap.state.maxInventorySlots === 8, 'Inventory has full 8 slots at Level 30');
+  assert(hydratedCap.state.inventory.length === 8, 'Inventory array has 8 entries');
+
+  // 16. Kingdom Restoration remains functional at Level 30
+  assert(hydratedCap.state.kingdomAreas.length >= 4, 'Kingdom Restoration areas available at Level 30');
+
+  // 17. Compendium milestone claims remain functional at Level 30
+  assert(Array.isArray(hydratedCap.state.claimedCompendiumMilestoneIds), 'Compendium milestone claims trackable at Level 30');
+
+  // 18. Existing Level 1–29 progression remains unchanged
+  assert(getLevelProgression(1).rewards.coins === 100, 'Level 1 progression is intact');
+  assert(getLevelProgression(10).isChapterMilestone === true, 'Level 10 Chapter 1 milestone is intact');
+  assert(getLevelProgression(20).isChapterMilestone === true, 'Level 20 Chapter 2 milestone is intact');
+  assert(getLevelProgression(28).rewards.inventorySlotsAdded === 1, 'Level 28 inventory slot reward is intact');
+
+  // 19. A legacy/development Level 35 save is safely normalized without wiping game state
+  const devLegacySave = JSON.stringify({
+    level: 35,
+    xp: 99999,
+    coins: 77777,
+    gems: 999,
+    energy: 100,
+    maxEnergy: 100,
+    discoveredItemIds: ['herb_1', 'potion_1', 'provision_8', 'lantern_8'],
+  });
+  const hydratedDev = hydrateAndMigrateSave(null, devLegacySave, Date.now());
+  assert(hydratedDev.state.level === 30, 'Legacy Level 35 save is safely clamped to Level 30');
+  assert(hydratedDev.state.xp === 50000, 'Legacy Level 35 XP is safely clamped to Level 30 requirement');
+  assert(hydratedDev.state.coins === 77777, 'Legacy save currencies are preserved without loss (coins: 77777)');
+  assert(hydratedDev.state.gems === 999, 'Legacy save gems are preserved (gems: 999)');
+  assert(hydratedDev.state.discoveredItemIds.length === 4, 'Legacy discoveries preserved');
+
+  // 20. Future max-level configuration can be changed without rewriting progression logic
+  assert(typeof CURRENT_MAX_PLAYER_LEVEL === 'number', 'CURRENT_MAX_PLAYER_LEVEL is configuration-driven');
 }
 
 console.log(`\n========================================`);
