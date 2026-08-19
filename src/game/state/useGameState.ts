@@ -205,6 +205,8 @@ export function useGameState() {
       let accumulatedCoins = 0;
       let accumulatedGems = 0;
       let accumulatedInvSlots = 0;
+      let accumulatedEnergy = 0;
+      let hasFullEnergyRefill = false;
       let lastProgDef: LevelProgressionDef | undefined;
       const claimedRewardIds = [...(prev.claimedLevelRewardIds || [])];
 
@@ -225,6 +227,12 @@ export function useGameState() {
           claimedRewardIds.push(newLevel);
           accumulatedCoins += progDef.rewards.coins;
           accumulatedGems += progDef.rewards.gems;
+
+          if (progDef.rewards.isFullEnergyRefill || progDef.rewards.energy >= prev.maxEnergy) {
+            hasFullEnergyRefill = true;
+          } else {
+            accumulatedEnergy += (progDef.rewards.energy || 0);
+          }
 
           // 1. Check Generator Unlock
           if (progDef.unlocks.generatorId) {
@@ -254,7 +262,7 @@ export function useGameState() {
             }
           }
 
-          // 2. Check Inventory Slot Expansion (Level 6)
+          // 2. Check Inventory Slot Expansion (Level 6 & Level 18)
           if (progDef.rewards.inventorySlotsAdded || progDef.unlocks.inventorySlotIncrease) {
             const addSlots = progDef.rewards.inventorySlotsAdded || progDef.unlocks.inventorySlotIncrease || 1;
             maxSlots += addSlots;
@@ -264,7 +272,7 @@ export function useGameState() {
             accumulatedInvSlots += addSlots;
           }
 
-          // 3. Check Special Chest Reward (e.g. Golden Chest at Level 10)
+          // 3. Check Special Chest Reward (e.g. Golden Chest at Level 10/15, Royal at Level 20)
           if (progDef.rewards.chestItemId) {
             spawnItemOnFirstEmpty(newGrid, {
               instanceId: `reward_${progDef.rewards.chestItemId}_${Date.now()}`,
@@ -278,10 +286,17 @@ export function useGameState() {
       if (leveledUp && lastProgDef) {
         audio.playLevelUp();
         confetti({
-          particleCount: newLevel === 10 ? 150 : 80,
-          spread: newLevel === 10 ? 100 : 70,
+          particleCount: newLevel === 10 || newLevel === 20 ? 150 : 80,
+          spread: newLevel === 10 || newLevel === 20 ? 100 : 70,
           origin: { y: 0.55 },
         });
+
+        let newEnergy = prev.energy;
+        if (hasFullEnergyRefill) {
+          newEnergy = prev.maxEnergy;
+        } else if (accumulatedEnergy > 0) {
+          newEnergy = Math.min(prev.maxEnergy, prev.energy + accumulatedEnergy);
+        }
 
         setLevelUpData({
           level: newLevel,
@@ -289,7 +304,8 @@ export function useGameState() {
           rewards: {
             coins: accumulatedCoins,
             gems: accumulatedGems,
-            energy: prev.maxEnergy,
+            energy: hasFullEnergyRefill ? prev.maxEnergy : accumulatedEnergy,
+            isFullEnergyRefill: hasFullEnergyRefill,
             chestItemId: lastProgDef.rewards.chestItemId,
             inventorySlotsAdded: accumulatedInvSlots > 0 ? accumulatedInvSlots : undefined,
           },
@@ -307,7 +323,7 @@ export function useGameState() {
           xpToNextLevel: newXpToNext,
           coins: prev.coins + accumulatedCoins,
           gems: prev.gems + accumulatedGems,
-          energy: prev.maxEnergy, // Full refill on level up
+          energy: newEnergy,
           claimedLevelRewardIds: claimedRewardIds,
           grid: newGrid,
           inventory: newInventory,
@@ -772,8 +788,8 @@ export function useGameState() {
       let updatedSpecialOrder = prev.specialOrder;
 
       if (isSpecial) {
-        // Generate replacement special order
-        updatedSpecialOrder = generateSpecialOrder(newGrid, prev.inventory, prev.level);
+        // Special order completed: cleared (does not immediately respawn)
+        updatedSpecialOrder = undefined;
       } else {
         // Generate replacement order using safe producible chains
         const remainingOrders = prev.activeOrders.filter((o) => o.id !== orderId);
@@ -784,6 +800,15 @@ export function useGameState() {
           remainingOrders.map((o) => o.id)
         );
         updatedActiveOrders = [...remainingOrders, newOrder];
+
+        // If player has unlocked Special Orders and has no active special order, chance to spawn one
+        if (
+          prev.level >= BALANCE.SPECIAL_ORDER_UNLOCK_LEVEL &&
+          !updatedSpecialOrder &&
+          Math.random() < BALANCE.SPECIAL_ORDER_SPAWN_CHANCE_ON_ORDER
+        ) {
+          updatedSpecialOrder = generateSpecialOrder(newGrid, prev.inventory, prev.level);
+        }
       }
 
       // Action-driven tutorial advance on order completion (Step 3 -> Step 4)

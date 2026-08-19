@@ -140,14 +140,18 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
 
           <div className="flex flex-col items-center">
             <span className="text-lg">⚡</span>
-            <span className="text-xs font-black text-cyan-300">Full Refill</span>
+            <span className="text-xs font-black text-cyan-300">
+              {rewards.isFullEnergyRefill || rewards.energy >= 100 ? 'Full Refill' : `+${rewards.energy}`}
+            </span>
             <span className="text-[9px] text-slate-400 font-bold">Energy</span>
           </div>
 
           {rewards.chestItemId && (
             <div className="flex flex-col items-center">
               <span className="text-lg">🎁</span>
-              <span className="text-xs font-black text-yellow-300">Golden Chest</span>
+              <span className="text-xs font-black text-yellow-300">
+                {rewards.chestItemId === 'chest_royal' ? 'Royal Chest' : 'Golden Chest'}
+              </span>
               <span className="text-[9px] text-slate-400 font-bold">Bonus</span>
             </div>
           )}

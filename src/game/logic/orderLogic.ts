@@ -191,6 +191,77 @@ export function getProducibleItemPools(
   return pools;
 }
 
+export interface OrderRewardCalculation {
+  coins: number;
+  xp: number;
+  gems?: number;
+  energy?: number;
+  chestId?: string;
+  totalEffort: number;
+  totalTier: number;
+}
+
+/**
+ * Centralized formula to calculate controlled order rewards based on requested item tiers
+ * and production effort without runaway exponential explosions.
+ */
+export function calculateOrderRewards(
+  requirements: { itemId: string; count: number }[],
+  isSpecial = false
+): OrderRewardCalculation {
+  let totalEffort = 0;
+  let totalTier = 0;
+
+  for (const req of requirements) {
+    const item = ITEMS[req.itemId];
+    const tier = item?.tier || parseInt(req.itemId.split('_')[1], 10) || 1;
+    const count = req.count || 1;
+    const effort = (BALANCE.ORDER_TIER_EFFORT[tier] ?? Math.pow(2, Math.max(0, tier - 1))) * count;
+    totalEffort += effort;
+    totalTier += tier * count;
+  }
+
+  // Normal baseline rewards: base + effort * multiplier
+  const normalCoins = Math.round(
+    BALANCE.NORMAL_ORDER_BASE_COINS + totalEffort * BALANCE.NORMAL_ORDER_COIN_PER_EFFORT
+  );
+  const normalXP = Math.round(
+    BALANCE.NORMAL_ORDER_BASE_XP + totalEffort * BALANCE.NORMAL_ORDER_XP_PER_EFFORT + totalTier * 2
+  );
+
+  if (isSpecial) {
+    const coins = Math.round(normalCoins * BALANCE.SPECIAL_ORDER_COIN_MULTIPLIER);
+    const xp = Math.round(normalXP * BALANCE.SPECIAL_ORDER_XP_MULTIPLIER);
+    const gems = Math.min(10, Math.max(4, Math.floor(totalEffort / 6)));
+    const chestId = totalEffort >= 32 ? 'chest_golden' : 'chest_silver';
+
+    return {
+      coins,
+      xp,
+      gems,
+      chestId,
+      totalEffort,
+      totalTier,
+    };
+  }
+
+  // Normal Order rewards
+  const bonusGems =
+    totalEffort >= 16 && Math.random() > 0.6 ? Math.min(3, Math.floor(totalEffort / 16)) : undefined;
+  const bonusEnergy = Math.random() > 0.4 ? 15 : undefined;
+  const bonusChest = totalEffort >= 32 && Math.random() > 0.7 ? 'chest_wooden' : undefined;
+
+  return {
+    coins: normalCoins,
+    xp: normalXP,
+    gems: bonusGems,
+    energy: bonusEnergy,
+    chestId: bonusChest,
+    totalEffort,
+    totalTier,
+  };
+}
+
 /**
  * Generates a safe dynamic NPC order that strictly requires items the player can produce.
  */
@@ -205,7 +276,6 @@ export function generateSafeRandomOrder(
   // Multi-item orders only appear from Level 4+
   const numRequirements = level >= 4 && Math.random() > 0.65 ? 2 : 1;
   const requirements: { itemId: string; count: number }[] = [];
-  let totalTier = 0;
   let primaryPrefix = 'herb_';
 
   for (let i = 0; i < numRequirements; i++) {
@@ -217,16 +287,13 @@ export function generateSafeRandomOrder(
     // Verify item exists in item registry
     if (ITEMS[reqItemId] && !requirements.some((r) => r.itemId === reqItemId)) {
       requirements.push({ itemId: reqItemId, count: 1 });
-      totalTier += tier;
     }
   }
 
   if (requirements.length === 0) {
     requirements.push({ itemId: 'herb_1', count: 1 });
-    totalTier = 1;
   }
 
-  // Select appropriate NPC based on requested item family
   let npcId = 'elowen';
   if (primaryPrefix === 'potion_') npcId = 'valerie';
   else if (primaryPrefix === 'forge_') npcId = 'balgor';
@@ -239,12 +306,8 @@ export function generateSafeRandomOrder(
 
   const npc = NPCS[npcId] || NPCS['elowen'];
 
-  // Scaled rewards based on total requested tier
-  const baseCoins = Math.round(Math.pow(2.0, totalTier) * 8 + totalTier * 15);
-  const baseXP = Math.round(totalTier * 18 + 12);
-  const bonusGems = totalTier >= 4 && Math.random() > 0.5 ? Math.floor(totalTier / 2) : undefined;
-  const bonusEnergy = Math.random() > 0.4 ? 15 : undefined;
-  const bonusChest = totalTier >= 5 && Math.random() > 0.7 ? 'chest_wooden' : undefined;
+  // Scaled rewards calculated safely via centralized helper
+  const rewardCalc = calculateOrderRewards(requirements, false);
 
   const quotes: Record<string, string[]> = {
     elowen: [
@@ -301,11 +364,11 @@ export function generateSafeRandomOrder(
     npcQuote: selectedQuote,
     requirements,
     rewards: {
-      coins: baseCoins,
-      xp: baseXP,
-      gems: bonusGems,
-      energy: bonusEnergy,
-      chestId: bonusChest,
+      coins: rewardCalc.coins,
+      xp: rewardCalc.xp,
+      gems: rewardCalc.gems,
+      energy: rewardCalc.energy,
+      chestId: rewardCalc.chestId,
     },
     isStoryOrder: false,
     isSpecialOrder: false,
@@ -330,7 +393,6 @@ export function generateSpecialOrder(
   // Pick 1-2 distinct high-tier items from available pools
   const numReqs = Math.random() > 0.5 ? 2 : 1;
   const requirements: { itemId: string; count: number }[] = [];
-  let totalTier = 0;
   let primaryPrefix = 'textile_';
 
   for (let i = 0; i < numReqs; i++) {
@@ -343,13 +405,11 @@ export function generateSpecialOrder(
 
     if (ITEMS[reqItemId] && !requirements.some((r) => r.itemId === reqItemId)) {
       requirements.push({ itemId: reqItemId, count: 1 });
-      totalTier += tier;
     }
   }
 
   if (requirements.length === 0) {
     requirements.push({ itemId: 'potion_4', count: 1 });
-    totalTier = 4;
   }
 
   let npcId = 'aurelia';
@@ -360,12 +420,7 @@ export function generateSpecialOrder(
 
   const npc = NPCS[npcId] || NPCS['aurelia'];
 
-  const coins = Math.round(
-    (Math.pow(2.0, totalTier) * 12 + totalTier * 30) * BALANCE.SPECIAL_ORDER_COIN_MULTIPLIER
-  );
-  const xp = Math.round((totalTier * 35 + 40) * BALANCE.SPECIAL_ORDER_XP_MULTIPLIER);
-  const gems = Math.max(5, Math.floor(totalTier * 2.5));
-  const chestId = totalTier >= 6 ? 'chest_golden' : 'chest_silver';
+  const rewardCalc = calculateOrderRewards(requirements, true);
 
   const specialQuotes: Record<string, string> = {
     aurelia: 'The Royal Commission urgently requests this masterwork for the grand restoration celebration!',
@@ -383,10 +438,10 @@ export function generateSpecialOrder(
     npcQuote: specialQuotes[npc.id] || specialQuotes.aurelia,
     requirements,
     rewards: {
-      coins,
-      xp,
-      gems,
-      chestId,
+      coins: rewardCalc.coins,
+      xp: rewardCalc.xp,
+      gems: rewardCalc.gems,
+      chestId: rewardCalc.chestId,
     },
     isStoryOrder: false,
     isSpecialOrder: true,

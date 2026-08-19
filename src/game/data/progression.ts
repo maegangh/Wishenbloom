@@ -19,6 +19,7 @@ export interface LevelRewards {
   coins: number;
   gems: number;
   energy: number;
+  isFullEnergyRefill?: boolean;
   chestItemId?: string;
   inventorySlotsAdded?: number;
 }
@@ -286,8 +287,8 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     rewards: {
       coins: 350,
-      gems: 10,
-      energy: 100,
+      gems: 0,
+      energy: 25,
     },
   },
   12: {
@@ -305,8 +306,8 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     rewards: {
       coins: 400,
-      gems: 12,
-      energy: 100,
+      gems: 5,
+      energy: 30,
     },
   },
   13: {
@@ -331,8 +332,8 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     rewards: {
       coins: 450,
-      gems: 15,
-      energy: 100,
+      gems: 5,
+      energy: 40,
     },
   },
   14: {
@@ -349,8 +350,8 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     rewards: {
       coins: 500,
-      gems: 15,
-      energy: 100,
+      gems: 0,
+      energy: 30,
     },
   },
   15: {
@@ -366,9 +367,10 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
       mechanicDescription: 'Optional high-reward Royal Commission orders now appear with golden borders and chest bounties!',
     },
     rewards: {
-      coins: 650,
-      gems: 25,
+      coins: 700,
+      gems: 15,
       energy: 100,
+      isFullEnergyRefill: true,
       chestItemId: 'chest_golden',
     },
   },
@@ -386,8 +388,8 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     rewards: {
       coins: 550,
-      gems: 18,
-      energy: 100,
+      gems: 0,
+      energy: 35,
     },
   },
   17: {
@@ -412,8 +414,8 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     rewards: {
       coins: 600,
-      gems: 20,
-      energy: 100,
+      gems: 5,
+      energy: 40,
     },
   },
   18: {
@@ -430,9 +432,9 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
       mechanicDescription: 'Permanent inventory storage increased to 7 slots!',
     },
     rewards: {
-      coins: 700,
-      gems: 22,
-      energy: 100,
+      coins: 650,
+      gems: 5,
+      energy: 40,
       inventorySlotsAdded: 1,
     },
   },
@@ -450,8 +452,8 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     },
     rewards: {
       coins: 800,
-      gems: 25,
-      energy: 100,
+      gems: 0,
+      energy: 50,
     },
   },
   20: {
@@ -461,15 +463,16 @@ export const LEVEL_PROGRESSION: Record<number, LevelProgressionDef> = {
     title: 'Chapter 2 Milestone: Conduits of the Crown',
     subtitle: 'The Outer Provinces Stir',
     storySnippet:
-      'The entire central kingdom hums with glorious Bloom energy! The recovered relics prove the conduits were sealed as a sanctuary measure against an ancient cosmic storm. Beyond the mist, the seals on the Outer Provinces begin awakening!',
+      'The entire central kingdom hums with glorious Bloom energy! Recovered royal records prove the subterranean conduits were intentionally sealed under crown decree, but the final pages explaining the true cause are missing or deliberately expunged. Beyond the mist, a deep resonance from the Outer Provinces suggests the answers lie ahead.',
     unlocks: {
       mechanicName: 'Chapter 2 Milestone',
       mechanicDescription: 'Chapter 2 Completed! The central province is fully revitalized and the outer realms call.',
     },
     rewards: {
-      coins: 1500,
-      gems: 60,
+      coins: 1200,
+      gems: 30,
       energy: 100,
+      isFullEnergyRefill: true,
       chestItemId: 'chest_royal',
     },
     isChapterMilestone: true,

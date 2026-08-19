@@ -1,7 +1,12 @@
 import { checkMergeValidity, rollBubbleSpawn } from '../logic/mergeLogic';
 import { resolveExpiredBubbles, canPurchaseBubble, getBubbleRemainingSeconds } from '../logic/bubbleLogic';
 import { validateGeneratorTap, validateGeneratorUpgrade, getGeneratorCooldownRemaining } from '../logic/generatorLogic';
-import { getProducibleItemPools, generateSafeRandomOrder, isOrderFulfillable } from '../logic/orderLogic';
+import {
+  getProducibleItemPools,
+  generateSafeRandomOrder,
+  isOrderFulfillable,
+  calculateOrderRewards,
+} from '../logic/orderLogic';
 import { hydrateAndMigrateSave, createDefaultInitialState, CURRENT_SCHEMA_VERSION } from '../logic/saveMigration';
 import {
   LEVEL_PROGRESSION,
@@ -348,17 +353,19 @@ console.log('\n[6] Testing Levels 1–10 Player Progression Architecture & Invar
 // TEST SUITE 6: Chapter 2 Progression (Player Levels 11–20)
 console.log('\n[6] Testing Chapter 2 Progression (Player Levels 11–20):');
 {
-  // 1. Level 11: Relic Ciphers
+  // 1. Level 11: Relic Ciphers (0 gems, 25 energy)
   const l11 = getLevelProgression(11);
   assert(l11.unlocks.mechanicName === 'Relic Ciphers', 'Level 11 unlocks Relic Ciphers mechanic');
-  assert(l11.rewards.coins === 350 && l11.rewards.gems === 10, 'Level 11 rewards 350 Coins and 10 Gems');
+  assert(l11.rewards.coins === 350 && l11.rewards.gems === 0, 'Level 11 rewards 350 Coins and 0 Gems (no unearned early gems)');
+  assert(l11.rewards.energy === 25, 'Level 11 awards partial energy (+25)');
 
-  // 2. Level 12: Moonstone Causeway
+  // 2. Level 12: Moonstone Causeway (5 gems, 30 energy)
   const l12 = getLevelProgression(12);
   assert(l12.unlocks.kingdomAreaId === 'causeway', 'Level 12 unlocks Moonstone Causeway kingdom area');
-  assert(l12.rewards.coins === 400 && l12.rewards.gems === 12, 'Level 12 rewards 400 Coins and 12 Gems');
+  assert(l12.rewards.coins === 400 && l12.rewards.gems === 5, 'Level 12 rewards 400 Coins and 5 Gems');
+  assert(l12.rewards.energy === 30, 'Level 12 awards partial energy (+30)');
 
-  // 3. Level 13: Enchanted Textiles & Royal Loom
+  // 3. Level 13: Enchanted Textiles & Royal Loom (5 gems, 40 energy)
   const l13 = getLevelProgression(13);
   assert(l13.unlocks.generatorId === 'gen_loom_1', 'Level 13 unlocks Royal Loom (gen_loom_1)');
   assert(l13.unlocks.chainId === 'textiles', 'Level 13 unlocks textiles chain');
@@ -366,14 +373,18 @@ console.log('\n[6] Testing Chapter 2 Progression (Player Levels 11–20):');
   assert(getUnlockedChainsForLevel(13).includes('textiles'), 'Level 13 unlocked chains include textiles');
   assert(!getUnlockedChainsForLevel(12).includes('textiles'), 'Level 12 does not include textiles');
   assert(Boolean(ITEMS['textile_1'] && ITEMS['textile_8']), 'Textiles chain items T1-T8 exist');
+  assert(l13.rewards.gems === 5 && l13.rewards.energy === 40, 'Level 13 rewards 5 Gems and 40 Energy');
 
-  // 4. Level 14: Tapestry Lore
+  // 4. Level 14: Tapestry Lore (0 gems, 30 energy)
   const l14 = getLevelProgression(14);
   assert(l14.unlocks.mechanicName === 'Artisan Lore', 'Level 14 unlocks Artisan Lore mechanic');
+  assert(l14.rewards.gems === 0 && l14.rewards.energy === 30, 'Level 14 rewards 0 Gems and 30 Energy');
 
-  // 5. Level 15: Special Orders / Royal Commissions
+  // 5. Level 15: Special Orders / Royal Commissions (15 gems, full energy refill, Golden Chest)
   const l15 = getLevelProgression(15);
   assert(l15.unlocks.mechanicName === 'Special Orders', 'Level 15 unlocks Special Orders');
+  assert(l15.rewards.gems === 15, 'Level 15 awards controlled midpoint milestone 15 Gems');
+  assert(l15.rewards.isFullEnergyRefill === true, 'Level 15 awards full energy refill milestone');
   assert(l15.rewards.chestItemId === 'chest_golden', 'Level 15 awards Golden Chest');
   assert(BALANCE.SPECIAL_ORDER_UNLOCK_LEVEL === 15, 'Special orders unlock level constant is 15');
 
@@ -386,12 +397,13 @@ console.log('\n[6] Testing Chapter 2 Progression (Player Levels 11–20):');
   const specialOrder = generateSafeRandomOrder(ch2Grid, [], 15, []);
   assert(specialOrder !== null, 'Order generated successfully at Level 15');
 
-  // 6. Level 16: Deep Realm Lore
+  // 6. Level 16: Deep Realm Lore (0 gems, 35 energy)
   const l16 = getLevelProgression(16);
   assert(l16.unlocks.mechanicName === 'Deep Realm Lore', 'Level 16 unlocks Deep Realm Lore');
-  assert(l16.rewards.coins === 550, 'Level 16 awards 550 Coins');
+  assert(l16.rewards.coins === 550 && l16.rewards.gems === 0, 'Level 16 awards 550 Coins and 0 Gems');
+  assert(l16.rewards.energy === 35, 'Level 16 awards 35 Energy');
 
-  // 7. Level 17: Enchanted Crystals & Arcane Quarry
+  // 7. Level 17: Enchanted Crystals & Arcane Quarry (5 gems, 40 energy)
   const l17 = getLevelProgression(17);
   assert(l17.unlocks.generatorId === 'gen_quarry_1', 'Level 17 unlocks Arcane Quarry (gen_quarry_1)');
   assert(l17.unlocks.chainId === 'crystals', 'Level 17 unlocks crystals & runestones chain');
@@ -399,23 +411,101 @@ console.log('\n[6] Testing Chapter 2 Progression (Player Levels 11–20):');
   assert(getUnlockedChainsForLevel(17).includes('crystals'), 'Level 17 unlocked chains include crystals');
   assert(!getUnlockedChainsForLevel(16).includes('crystals'), 'Level 16 does not include crystals');
   assert(Boolean(ITEMS['crystal_1'] && ITEMS['crystal_8']), 'Crystals chain items T1-T8 exist');
+  assert(l17.rewards.gems === 5 && l17.rewards.energy === 40, 'Level 17 awards 5 Gems and 40 Energy');
 
-  // 8. Level 18: Artisan Vault Expansion
+  // 8. Level 18: Artisan Vault Expansion (5 gems, 40 energy, 1 slot)
   const l18 = getLevelProgression(18);
   assert(l18.unlocks.inventorySlotIncrease === 1, 'Level 18 grants 7th inventory slot');
   assert(l18.rewards.inventorySlotsAdded === 1, 'Level 18 records inventorySlotsAdded');
+  assert(l18.rewards.gems === 5 && l18.rewards.energy === 40, 'Level 18 awards 5 Gems and 40 Energy');
 
-  // 9. Level 19: Harmonic Convergence
+  // 9. Level 19: Harmonic Convergence (0 gems, 50 energy)
   const l19 = getLevelProgression(19);
   assert(l19.unlocks.mechanicName === 'Harmonic Convergence', 'Level 19 unlocks Harmonic Convergence');
-  assert(l19.rewards.coins === 800 && l19.rewards.gems === 25, 'Level 19 awards 800 Coins and 25 Gems');
+  assert(l19.rewards.coins === 800 && l19.rewards.gems === 0, 'Level 19 awards 800 Coins and 0 Gems');
+  assert(l19.rewards.energy === 50, 'Level 19 awards 50 Energy');
 
-  // 10. Level 20: Chapter 2 Milestone
+  // 10. Level 20: Chapter 2 Milestone (30 gems, full refill, Royal Chest)
   const l20 = getLevelProgression(20);
   assert(l20.isChapterMilestone === true, 'Level 20 is marked as Chapter 2 Milestone');
-  assert(l20.rewards.gems === 60, 'Level 20 awards 60 Gems');
+  assert(l20.rewards.gems === 30, 'Level 20 awards tuned 30 Gems (reduced from old excessive 60)');
+  assert(l20.rewards.isFullEnergyRefill === true, 'Level 20 awards full energy refill milestone');
   assert(l20.rewards.chestItemId === 'chest_royal', 'Level 20 awards Royal Chapter Chest');
   assert(BALANCE.CHAPTER_2_CTA_TEXT === 'Continue Your Journey', 'Chapter 2 CTA text is "Continue Your Journey"');
+
+  // Total Chapter 2 Gem check
+  let ch2TotalGems = 0;
+  for (let lvl = 11; lvl <= 20; lvl++) {
+    ch2TotalGems += getLevelProgression(lvl).rewards.gems;
+  }
+  assert(ch2TotalGems === 65, `Chapter 2 total progression gems is 65 (was: ${ch2TotalGems})`);
+}
+
+// TEST SUITE 7: Order Economy & Scaling Formulas
+console.log('\n[7] Testing Order Economy & Scaling Formulas:');
+{
+  const rT1 = calculateOrderRewards([{ itemId: 'herb_1', count: 1 }], false);
+  const rT2 = calculateOrderRewards([{ itemId: 'herb_2', count: 1 }], false);
+  const rT3 = calculateOrderRewards([{ itemId: 'herb_3', count: 1 }], false);
+  const rT4 = calculateOrderRewards([{ itemId: 'herb_4', count: 1 }], false);
+  const rT5 = calculateOrderRewards([{ itemId: 'herb_5', count: 1 }], false);
+  const rT6 = calculateOrderRewards([{ itemId: 'herb_6', count: 1 }], false);
+  const r2xT6 = calculateOrderRewards([{ itemId: 'herb_6', count: 2 }], false);
+
+  // 1. Two T6 items do NOT produce an absurd coin reward (old was 32,768+)
+  assert(r2xT6.coins < 2000, `Two T6 normal items reward reasonable coins (${r2xT6.coins} coins < 2000)`);
+  assert(r2xT6.xp < 1000, `Two T6 normal items reward reasonable XP (${r2xT6.xp} XP < 1000)`);
+
+  // 2. Monotonic scaling: T1 < T2 < T3 < T4 < T5 < T6 < 2xT6
+  assert(
+    rT1.coins < rT2.coins &&
+    rT2.coins < rT3.coins &&
+    rT3.coins < rT4.coins &&
+    rT4.coins < rT5.coins &&
+    rT5.coins < rT6.coins &&
+    rT6.coins < r2xT6.coins,
+    'Normal order Coin rewards increase monotonically with production tier and count'
+  );
+
+  assert(
+    rT1.xp < rT2.xp &&
+    rT2.xp < rT3.xp &&
+    rT3.xp < rT4.xp &&
+    rT4.xp < rT5.xp &&
+    rT5.xp < rT6.xp &&
+    rT6.xp < r2xT6.xp,
+    'Normal order XP rewards increase monotonically with production tier and count'
+  );
+
+  // 3. Special Orders vs Normal Orders
+  const specT4 = calculateOrderRewards([{ itemId: 'textile_4', count: 1 }], true);
+  const normT4 = calculateOrderRewards([{ itemId: 'textile_4', count: 1 }], false);
+  assert(specT4.coins > normT4.coins, `Special order Coins (${specT4.coins}) > Normal order Coins (${normT4.coins})`);
+  assert(specT4.xp > normT4.xp, `Special order XP (${specT4.xp}) > Normal order XP (${normT4.xp})`);
+  assert(specT4.gems !== undefined && specT4.gems > 0, `Special order awards gems (${specT4.gems})`);
+
+  // 4. Special order 2xT6 remains within reasonable bounds (< 3000 coins)
+  const spec2xT6 = calculateOrderRewards([{ itemId: 'crystal_6', count: 2 }], true);
+  assert(spec2xT6.coins < 3000, `2xT6 Special order Coin reward (${spec2xT6.coins}) is < 3000`);
+  assert(spec2xT6.xp < 1500, `2xT6 Special order XP reward (${spec2xT6.xp}) is < 1500`);
+}
+
+// TEST SUITE 8: Story Integrity & Narrative Ambiguity
+console.log('\n[8] Testing Story Integrity & Narrative Ambiguity:');
+{
+  const l20 = getLevelProgression(20);
+  assert(
+    !l20.storySnippet.toLowerCase().includes('cosmic storm'),
+    'Level 20 story snippet does NOT confirm "cosmic storm" (restores narrative ambiguity)'
+  );
+  assert(
+    l20.storySnippet.includes('conduits') && (l20.storySnippet.includes('sealed') || l20.storySnippet.includes('decree')),
+    'Level 20 story snippet confirms conduits were sealed under royal decree'
+  );
+  assert(
+    BALANCE.CHAPTER_2_CTA_TEXT === 'Continue Your Journey',
+    'Chapter 2 milestone CTA continues journey gracefully'
+  );
 }
 
 console.log(`\n========================================`);
