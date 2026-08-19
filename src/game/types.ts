@@ -13,6 +13,23 @@ export type ItemChainId =
   | 'gems'
   | 'chests';
 
+export type TutorialStage =
+  | 'WELCOME'
+  | 'TAP_GENERATOR'
+  | 'MERGE_ITEMS'
+  | 'DELIVER_ORDER'
+  | 'INTRO_KINGDOM'
+  | 'COMPLETE';
+
+export const TUTORIAL_STAGES: Record<number, TutorialStage> = {
+  0: 'WELCOME',
+  1: 'TAP_GENERATOR',
+  2: 'MERGE_ITEMS',
+  3: 'DELIVER_ORDER',
+  4: 'INTRO_KINGDOM',
+  5: 'COMPLETE',
+};
+
 export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 export interface ItemDef {
@@ -294,6 +311,7 @@ export interface GameState {
   // Tutorial
   tutorialStep: number;
   isTutorialActive: boolean;
+  tutorialStage?: TutorialStage;
 
   // Settings & Stats
   settings: PlayerSettings;

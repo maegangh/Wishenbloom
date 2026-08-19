@@ -16,6 +16,7 @@ interface DevPanelProps {
   onSpawnItem: (itemId: string) => void;
   onClearBoard: () => void;
   onResetSave: () => void;
+  onResetTutorial?: () => void;
   onSimulateNextDay?: () => void;
   onResetDailyClaim?: () => void;
   onCompleteAllDailyTasks?: () => void;
@@ -34,6 +35,7 @@ export const DevPanel: React.FC<DevPanelProps> = ({
   onSpawnItem,
   onClearBoard,
   onResetSave,
+  onResetTutorial,
   onSimulateNextDay,
   onResetDailyClaim,
   onCompleteAllDailyTasks,
@@ -302,8 +304,20 @@ export const DevPanel: React.FC<DevPanelProps> = ({
         {/* Board Operations */}
         <div className="pt-3 border-t border-slate-800 space-y-2">
           <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            Board Management
+            Board & Onboarding Management
           </span>
+          {onResetTutorial && (
+            <button
+              onClick={() => {
+                onResetTutorial();
+                onClose();
+              }}
+              className="w-full py-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-800/40 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <span>Replay Interactive Tutorial</span>
+            </button>
+          )}
           <button
             onClick={onClearBoard}
             className="w-full py-2 rounded-xl bg-red-950/40 hover:bg-red-900/50 text-red-300 border border-red-800/40 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"

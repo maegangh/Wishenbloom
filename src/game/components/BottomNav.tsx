@@ -8,6 +8,8 @@ interface BottomNavProps {
   onChangeTab: (tab: MainTab) => void;
   hasUnclaimedQuests?: boolean;
   hasUnclaimedDiscoveries?: boolean;
+  isTutorialActive?: boolean;
+  tutorialStep?: number;
 }
 
 export const BottomNav: React.FC<BottomNavProps> = ({
@@ -15,6 +17,8 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onChangeTab,
   hasUnclaimedQuests,
   hasUnclaimedDiscoveries,
+  isTutorialActive,
+  tutorialStep,
 }) => {
   const tabs = [
     {
@@ -49,13 +53,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
+          const isTutorialTarget = isTutorialActive && tutorialStep === 4 && tab.id === 'kingdom' && !isActive;
 
           return (
             <button
               key={tab.id}
               onClick={() => onChangeTab(tab.id)}
               className={`relative flex-1 flex flex-col items-center justify-center py-1.5 px-2 rounded-2xl transition-all cursor-pointer ${
-                isActive
+                isTutorialTarget
+                  ? 'bg-gradient-to-b from-amber-500/40 to-amber-950/80 border-2 border-amber-400 text-amber-300 ring-4 ring-amber-400/80 shadow-[0_0_15px_rgba(251,191,36,0.6)] animate-pulse scale-105 z-20 font-black'
+                  : isActive
                   ? 'bg-gradient-to-b from-amber-600/30 to-amber-950/60 border-2 border-amber-400 text-amber-300 shadow-md shadow-amber-500/20 scale-102 font-black'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent font-bold'
               }`}

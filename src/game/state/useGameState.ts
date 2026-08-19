@@ -7,6 +7,7 @@ import {
   Quest,
   ItemDef,
   DailyTaskState,
+  TUTORIAL_STAGES,
 } from '../types';
 import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
@@ -324,16 +325,54 @@ export function useGameState() {
     setState((prev) => {
       if (!prev.isTutorialActive) return prev;
       const nextStep = targetStep !== undefined ? targetStep : prev.tutorialStep + 1;
+      const stage = TUTORIAL_STAGES[nextStep] || (nextStep >= 5 ? 'COMPLETE' : 'WELCOME');
       return {
         ...prev,
         tutorialStep: nextStep,
         isTutorialActive: nextStep < 5,
+        tutorialStage: stage,
       };
     });
   }, []);
 
   const dismissTutorial = useCallback(() => {
-    setState((prev) => ({ ...prev, isTutorialActive: false }));
+    setState((prev) => ({
+      ...prev,
+      isTutorialActive: false,
+      tutorialStep: 5,
+      tutorialStage: 'COMPLETE',
+    }));
+  }, []);
+
+  const devResetTutorial = useCallback(() => {
+    setState((prev) => {
+      const newGrid = prev.grid.map((r) => [...r]);
+      // Ensure starter generator is at 0,0
+      if (!newGrid[0][0]?.isGenerator) {
+        newGrid[0][0] = {
+          instanceId: 'item_gen_garden',
+          itemId: 'herb_1',
+          isGenerator: true,
+          generatorId: 'gen_garden_1',
+          tileState: 'normal',
+        };
+      }
+      // Ensure starter herbs exist for merge
+      if (!newGrid[2][2] || newGrid[2][2]?.tileState !== 'normal') {
+        newGrid[2][2] = { instanceId: `init_herb_1_${Date.now()}`, itemId: 'herb_1', tileState: 'normal' };
+      }
+      if (!newGrid[2][3] || newGrid[2][3]?.tileState !== 'normal') {
+        newGrid[2][3] = { instanceId: `init_herb_2_${Date.now()}`, itemId: 'herb_1', tileState: 'normal' };
+      }
+
+      return {
+        ...prev,
+        grid: newGrid,
+        tutorialStep: 0,
+        isTutorialActive: true,
+        tutorialStage: 'WELCOME',
+      };
+    });
   }, []);
 
   // Centralized Helper to add XP and evaluate level-up progression
@@ -519,7 +558,9 @@ export function useGameState() {
       return;
     }
 
-    const droppedItemId = rollGeneratorDrop(generator);
+    const droppedItemId = (state.isTutorialActive && state.tutorialStep <= 2)
+      ? 'herb_1'
+      : rollGeneratorDrop(generator);
     const now = Date.now();
 
     audio.playSpawn();
@@ -546,8 +587,10 @@ export function useGameState() {
 
       // Action-driven tutorial advance on generator tap (Step 1 -> Step 2)
       let nextTutorialStep = prev.tutorialStep;
+      let nextTutorialStage = prev.tutorialStage;
       if (prev.isTutorialActive && prev.tutorialStep === 1) {
         nextTutorialStep = 2;
+        nextTutorialStage = 'MERGE_ITEMS';
       }
 
       return {
@@ -555,6 +598,7 @@ export function useGameState() {
         energy: prev.energy - generator.energyCost,
         grid: newGrid,
         tutorialStep: nextTutorialStep,
+        tutorialStage: nextTutorialStage,
         stats: {
           ...prev.stats,
           totalGeneratorsTapped: prev.stats.totalGeneratorsTapped + 1,
@@ -676,14 +720,17 @@ export function useGameState() {
 
         // Action-driven tutorial advance on merge
         let nextTutorialStep = prev.tutorialStep;
+        let nextTutorialStage = prev.tutorialStage;
         if (prev.isTutorialActive && prev.tutorialStep === 2) {
           nextTutorialStep = 3;
+          nextTutorialStage = 'DELIVER_ORDER';
         }
 
         return {
           ...prev,
           grid: newGrid,
           tutorialStep: nextTutorialStep,
+          tutorialStage: nextTutorialStage,
           stats: {
             ...prev.stats,
             totalMerges: prev.stats.totalMerges + 1,
@@ -977,8 +1024,10 @@ export function useGameState() {
 
       // Action-driven tutorial advance on order completion (Step 3 -> Step 4)
       let nextTutorialStep = prev.tutorialStep;
+      let nextTutorialStage = prev.tutorialStage;
       if (prev.isTutorialActive && prev.tutorialStep === 3) {
         nextTutorialStep = 4;
+        nextTutorialStage = 'INTRO_KINGDOM';
       }
 
       return {
@@ -990,6 +1039,7 @@ export function useGameState() {
         activeOrders: updatedActiveOrders,
         specialOrder: updatedSpecialOrder,
         tutorialStep: nextTutorialStep,
+        tutorialStage: nextTutorialStage,
         stats: {
           ...prev.stats,
           totalOrdersCompleted: prev.stats.totalOrdersCompleted + 1,
@@ -1655,6 +1705,7 @@ export function useGameState() {
     devSpawnItem,
     devClearBoard,
     devResetSave,
+    devResetTutorial,
     devSimulateNextDay,
     devResetDailyClaim,
     devCompleteAllDailyTasks,

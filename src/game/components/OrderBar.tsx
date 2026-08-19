@@ -10,6 +10,8 @@ interface OrderBarProps {
   grid: (BoardItem | null)[][];
   onFulfillOrder: (orderId: string) => void;
   onSelectOrder?: (order: NPCOrder) => void;
+  isTutorialActive?: boolean;
+  tutorialStep?: number;
 }
 
 export const OrderBar: React.FC<OrderBarProps> = ({
@@ -17,6 +19,8 @@ export const OrderBar: React.FC<OrderBarProps> = ({
   grid,
   onFulfillOrder,
   onSelectOrder,
+  isTutorialActive,
+  tutorialStep,
 }) => {
   // Count items on the board
   const boardCounts: Record<string, number> = {};
@@ -35,17 +39,20 @@ export const OrderBar: React.FC<OrderBarProps> = ({
   return (
     <div className="w-full px-3 py-1 select-none z-10">
       <div className="grid grid-cols-2 gap-2 w-full max-w-md mx-auto">
-        {displayOrders.map((order) => {
+        {displayOrders.map((order, oIdx) => {
           const isComplete = order.requirements.every(
             (req) => (boardCounts[req.itemId] || 0) >= req.count
           );
+          const isTutorialTarget = isTutorialActive && tutorialStep === 3 && oIdx === 0;
 
           return (
             <div
               key={order.id}
               onClick={() => onSelectOrder?.(order)}
               className={`relative flex flex-col justify-between p-2 rounded-2xl border-2 transition-all shadow-md cursor-pointer ${
-                isComplete
+                isTutorialTarget
+                  ? 'bg-gradient-to-b from-emerald-950/90 via-slate-900/95 to-emerald-950/90 border-amber-400 ring-4 ring-amber-400/80 shadow-[0_0_20px_rgba(251,191,36,0.5)] z-20 animate-pulse'
+                  : isComplete
                   ? 'bg-gradient-to-b from-emerald-950/90 via-slate-900/95 to-emerald-950/90 border-emerald-400 shadow-emerald-500/20 ring-1 ring-emerald-400/40'
                   : order.isSpecialOrder || order.isStoryOrder
                   ? 'bg-gradient-to-b from-amber-950/80 via-slate-900/95 to-slate-900/95 border-amber-500/60 shadow-amber-500/10'

@@ -78,6 +78,7 @@ export function createDefaultInitialState(now: number = Date.now()): GameState {
 
     tutorialStep: 0,
     isTutorialActive: true,
+    tutorialStage: 'WELCOME',
 
     settings: {
       soundEnabled: true,
@@ -299,8 +300,9 @@ export function hydrateAndMigrateSave(
       claimedLevelRewardIds: Array.isArray(parsed.claimedLevelRewardIds) ? parsed.claimedLevelRewardIds : [],
       claimedCompendiumMilestoneIds: Array.isArray(parsed.claimedCompendiumMilestoneIds) ? parsed.claimedCompendiumMilestoneIds : [],
 
-      tutorialStep: typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep : 0,
-      isTutorialActive: typeof parsed.isTutorialActive === 'boolean' ? parsed.isTutorialActive : true,
+      tutorialStep: typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep : (parsed.isTutorialActive === false ? 5 : 0),
+      isTutorialActive: typeof parsed.isTutorialActive === 'boolean' ? parsed.isTutorialActive : (typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep < 5 : true),
+      tutorialStage: typeof parsed.tutorialStage === 'string' ? parsed.tutorialStage : (parsed.isTutorialActive === false || (typeof parsed.tutorialStep === 'number' && parsed.tutorialStep >= 5) ? 'COMPLETE' : 'WELCOME'),
 
       settings: {
         ...defaultState.settings,

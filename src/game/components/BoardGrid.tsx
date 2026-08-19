@@ -14,6 +14,8 @@ interface BoardGridProps {
   onMoveOrMerge: (fromRow: number, fromCol: number, toRow: number, toCol: number) => void;
   onPopBubble: (row: number, col: number, withGems: boolean) => void;
   onUseConsumable: (row: number, col: number) => void;
+  isTutorialActive?: boolean;
+  tutorialStep?: number;
 }
 
 interface DragState {
@@ -34,6 +36,8 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
   onTapGenerator,
   onMoveOrMerge,
   onPopBubble,
+  isTutorialActive,
+  tutorialStep,
 }) => {
   const boardRef = useRef<HTMLDivElement>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -190,6 +194,10 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
               const bubbleSeconds = cell?.tileState === 'bubble' ? getBubbleRemainingSeconds(cell) : 0;
               const cooldownSeconds = cell?.isGenerator ? getGeneratorCooldownRemaining(cell) : 0;
 
+              // Tutorial Highlights
+              const isTutorialGenTarget = isTutorialActive && tutorialStep === 1 && rIdx === 0 && cIdx === 0;
+              const isTutorialMergeTarget = isTutorialActive && tutorialStep === 2 && cell?.itemId === 'herb_1' && !cell.isGenerator;
+
               return (
                 <div
                   key={`${rIdx}-${cIdx}`}
@@ -205,9 +213,25 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
                       ? 'border-emerald-500 bg-emerald-100 scale-105 shadow-lg ring-2 ring-emerald-400 z-20'
                       : isHoverTarget
                       ? 'border-amber-500 bg-amber-100 scale-102 z-10'
+                      : isTutorialGenTarget
+                      ? 'border-amber-400 bg-amber-50 ring-4 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)] z-20'
+                      : isTutorialMergeTarget
+                      ? 'border-emerald-400 bg-emerald-50 ring-4 ring-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.8)] z-20'
                       : 'border-[#d4c39e] hover:border-amber-400/80'
                   }`}
                 >
+                  {/* Tutorial Callout Badge */}
+                  {isTutorialGenTarget && (
+                    <div className="absolute -top-2.5 -right-2.5 bg-amber-400 text-slate-950 text-[8px] font-black px-1.5 py-0.2 rounded-full border border-yellow-200 shadow-md z-30 animate-bounce">
+                      TAP
+                    </div>
+                  )}
+                  {isTutorialMergeTarget && (
+                    <div className="absolute -top-2.5 -right-2.5 bg-emerald-400 text-slate-950 text-[8px] font-black px-1.5 py-0.2 rounded-full border border-emerald-200 shadow-md z-30 animate-bounce">
+                      MERGE
+                    </div>
+                  )}
+
                   {/* Cyan Corner Brackets when Selected */}
                   {isSelected && (
                     <div className="absolute inset-0 pointer-events-none p-0.5 flex flex-col justify-between z-20">

@@ -67,6 +67,7 @@ export default function App() {
     devSpawnItem,
     devClearBoard,
     devResetSave,
+    devResetTutorial,
     devSimulateNextDay,
     devResetDailyClaim,
     devCompleteAllDailyTasks,
@@ -213,6 +214,8 @@ export default function App() {
                 ]}
                 grid={state.grid}
                 onFulfillOrder={fulfillOrder}
+                isTutorialActive={state.isTutorialActive}
+                tutorialStep={state.tutorialStep}
               />
 
               {/* 5 Feature Shortcut Buttons (Gifts, Tasks, Tome, Realm, Boost) */}
@@ -237,6 +240,8 @@ export default function App() {
                   onMoveOrMerge={moveOrMergeItem}
                   onPopBubble={popBubble}
                   onUseConsumable={useConsumable}
+                  isTutorialActive={state.isTutorialActive}
+                  tutorialStep={state.tutorialStep}
                 />
               </div>
 
@@ -302,6 +307,8 @@ export default function App() {
           onChangeTab={setActiveTab}
           hasUnclaimedQuests={hasUnclaimedQuests}
           hasUnclaimedDiscoveries={hasUnclaimedDiscoveries}
+          isTutorialActive={state.isTutorialActive}
+          tutorialStep={state.tutorialStep}
         />
 
         {/* Modals & Overlays */}
@@ -358,6 +365,7 @@ export default function App() {
             onSpawnItem={devSpawnItem}
             onClearBoard={devClearBoard}
             onResetSave={devResetSave}
+            onResetTutorial={devResetTutorial}
             onSimulateNextDay={devSimulateNextDay}
             onResetDailyClaim={devResetDailyClaim}
             onCompleteAllDailyTasks={devCompleteAllDailyTasks}
@@ -397,6 +405,8 @@ export default function App() {
         {state.isTutorialActive && (
           <TutorialOverlay
             currentStep={state.tutorialStep}
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
             onNext={() => advanceTutorial()}
             onDismiss={dismissTutorial}
           />
