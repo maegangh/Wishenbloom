@@ -56,7 +56,15 @@ import {
   generateSpecialOrder,
   isOrderFulfillable,
 } from '../logic/orderLogic';
-import { BALANCE } from '../data/balance';
+import { BALANCE, calculateEnergyGrant } from '../data/balance';
+import {
+  ALL_STORE_PRODUCTS,
+  getStoreProduct,
+  ENERGY_SHOP_PRODUCTS,
+  COIN_SHOP_PRODUCTS,
+  STARTER_WELCOME_PACK,
+} from '../data/storeProducts';
+import { mockPurchaseProvider } from '../logic/purchaseProvider';
 import {
   PRIMARY_STORAGE_KEY,
   LEGACY_STORAGE_KEY,
@@ -691,7 +699,7 @@ export function useGameState() {
 
       if (cType === 'energy') {
         audio.playSparkle();
-        newEnergy = Math.min(prev.maxEnergy + 50, prev.energy + cVal);
+        newEnergy = calculateEnergyGrant(prev.energy, cVal, true);
       } else if (cType === 'coins') {
         audio.playCoin();
         newCoins += cVal;
@@ -916,7 +924,7 @@ export function useGameState() {
         ...prev,
         coins: prev.coins + order.rewards.coins,
         gems: prev.gems + (order.rewards.gems || 0),
-        energy: Math.min(prev.maxEnergy, prev.energy + (order.rewards.energy || 0)),
+        energy: calculateEnergyGrant(prev.energy, order.rewards.energy || 0, true),
         grid: newGrid,
         activeOrders: updatedActiveOrders,
         specialOrder: updatedSpecialOrder,
@@ -1005,7 +1013,7 @@ export function useGameState() {
         ...prev,
         coins: prev.coins + quest.rewards.coins,
         gems: prev.gems + (quest.rewards.gems || 0),
-        energy: Math.min(prev.maxEnergy, prev.energy + (quest.rewards.energy || 0)),
+        energy: calculateEnergyGrant(prev.energy, quest.rewards.energy || 0, true),
         activeQuests: updatedQuests,
       };
     });
@@ -1055,9 +1063,7 @@ export function useGameState() {
         ...prev,
         coins: prev.coins + milestone.rewardCoins,
         gems: prev.gems + milestone.rewardGems,
-        energy: milestone.rewardEnergy
-          ? Math.min(prev.maxEnergy, prev.energy + milestone.rewardEnergy)
-          : prev.energy,
+        energy: calculateEnergyGrant(prev.energy, milestone.rewardEnergy || 0, true),
         grid: newGrid,
         claimedCompendiumMilestoneIds: [
           ...(prev.claimedCompendiumMilestoneIds || []),
@@ -1104,7 +1110,7 @@ export function useGameState() {
         ...prev,
         coins: prev.coins + coinsToAdd,
         gems: prev.gems + gemsToAdd,
-        energy: Math.min(prev.maxEnergy + 100, prev.energy + energyToAdd),
+        energy: calculateEnergyGrant(prev.energy, energyToAdd, true),
         grid: newGrid,
         dailyRewardCycleDay: nextCycleDay,
         lastDailyRewardClaimDate: todayUtc,
@@ -1143,7 +1149,7 @@ export function useGameState() {
         ...prev,
         coins: prev.coins + coinsToAdd,
         gems: prev.gems + gemsToAdd,
-        energy: Math.min(prev.maxEnergy + 50, prev.energy + energyToAdd),
+        energy: calculateEnergyGrant(prev.energy, energyToAdd, true),
         dailyTasks: updatedTasks,
         stats: {
           ...prev.stats,
@@ -1177,7 +1183,7 @@ export function useGameState() {
         ...prev,
         coins: prev.coins + DAILY_COMPLETION_REWARD.coins,
         gems: prev.gems + DAILY_COMPLETION_REWARD.gems,
-        energy: Math.min(prev.maxEnergy + 50, prev.energy + DAILY_COMPLETION_REWARD.energy),
+        energy: calculateEnergyGrant(prev.energy, DAILY_COMPLETION_REWARD.energy, true),
         grid: newGrid,
         dailyCompletionClaimed: true,
         stats: {
@@ -1188,6 +1194,256 @@ export function useGameState() {
       };
     });
   }, []);
+
+  // === 12f. GEM SPENDING & STORE MONETIZATION ACTIONS ===
+
+  // Centralized Gem validation
+  const canSpendGems = useCallback((amount: number): boolean => {
+    return state.gems >= amount && amount > 0;
+  }, [state.gems]);
+
+  // Centralized Gem spending
+  const spendGems = useCallback((amount: number): boolean => {
+    if (state.gems < amount || amount <= 0) {
+      audio.playTone(200, 'sawtooth', 0.15, 0.1);
+      return false;
+    }
+
+    audio.playGem();
+    setState((prev) => ({
+      ...prev,
+      gems: prev.gems - amount,
+      stats: {
+        ...prev.stats,
+        gemsSpent: (prev.stats.gemsSpent || 0) + amount,
+      },
+    }));
+    return true;
+  }, [state.gems]);
+
+  // Gem -> Energy Purchase
+  const purchaseEnergyWithGems = useCallback((productId: string): boolean => {
+    const product = ENERGY_SHOP_PRODUCTS.find((p) => p.id === productId || p.sku === productId);
+    if (!product || !product.gemCost || !product.energyGrant) return false;
+
+    if (state.gems < product.gemCost) {
+      audio.playTone(200, 'sawtooth', 0.15, 0.1);
+      return false;
+    }
+
+    audio.playSparkle();
+    confetti({ particleCount: 35, spread: 50 });
+
+    setState((prev) => ({
+      ...prev,
+      gems: prev.gems - product.gemCost!,
+      energy: calculateEnergyGrant(prev.energy, product.energyGrant!, true),
+      stats: {
+        ...prev.stats,
+        gemsSpent: (prev.stats.gemsSpent || 0) + product.gemCost!,
+        energyPurchased: (prev.stats.energyPurchased || 0) + product.energyGrant!,
+      },
+    }));
+    return true;
+  }, [state.gems]);
+
+  // Gem -> Coin Purchase
+  const purchaseCoinsWithGems = useCallback((productId: string): boolean => {
+    const product = COIN_SHOP_PRODUCTS.find((p) => p.id === productId || p.sku === productId);
+    if (!product || !product.gemCost || !product.coinGrant) return false;
+
+    if (state.gems < product.gemCost) {
+      audio.playTone(200, 'sawtooth', 0.15, 0.1);
+      return false;
+    }
+
+    audio.playCoin();
+    confetti({ particleCount: 35, spread: 50 });
+
+    setState((prev) => ({
+      ...prev,
+      gems: prev.gems - product.gemCost!,
+      coins: prev.coins + product.coinGrant!,
+      stats: {
+        ...prev.stats,
+        gemsSpent: (prev.stats.gemsSpent || 0) + product.gemCost!,
+        coinsPurchased: (prev.stats.coinsPurchased || 0) + product.coinGrant!,
+        totalCoinsEarned: prev.stats.totalCoinsEarned + product.coinGrant!,
+      },
+    }));
+    return true;
+  }, [state.gems]);
+
+  // Real-Money / Mock IAP Purchase Handler (Idempotent & Safe)
+  const processStorePurchase = useCallback(async (productIdOrSku: string): Promise<{ success: boolean; error?: string }> => {
+    const product = getStoreProduct(productIdOrSku);
+    if (!product) {
+      return { success: false, error: `Product '${productIdOrSku}' not found in catalog.` };
+    }
+
+    // Check one-time ownership locally first
+    if (product.isOneTime && state.purchasedOneTimeProductIds.includes(product.sku)) {
+      return { success: false, error: `You already own this one-time product (${product.displayName}).` };
+    }
+
+    // Call MockPurchaseProvider to simulate store processing
+    const purchaseResult = await mockPurchaseProvider.purchase(product.sku);
+    if (!purchaseResult.success || !purchaseResult.transactionId) {
+      return { success: false, error: purchaseResult.error || 'Store purchase simulation failed.' };
+    }
+
+    const txId = purchaseResult.transactionId;
+
+    let transactionProcessedSuccessfully = false;
+
+    setState((prev) => {
+      // Idempotency: Reject if this transaction ID was already recorded
+      if (prev.processedTransactionIds.includes(txId)) {
+        return prev;
+      }
+
+      // Re-verify one-time entitlement
+      if (product.isOneTime && prev.purchasedOneTimeProductIds.includes(product.sku)) {
+        return prev;
+      }
+
+      transactionProcessedSuccessfully = true;
+
+      const newGrid = prev.grid.map((r) => [...r]);
+      const newInventory = [...prev.inventory];
+      const newPendingRewards = [...prev.pendingRewards];
+
+      // Safe Chest Delivery with Inventory and Pending Rewards fallback
+      if (product.chestGrantItemId) {
+        const spawnedOnGrid = spawnItemOnFirstEmpty(newGrid, {
+          instanceId: `iap_chest_${Date.now()}`,
+          itemId: product.chestGrantItemId,
+          tileState: 'normal',
+        });
+
+        if (!spawnedOnGrid) {
+          // Grid is full -> try inventory
+          const firstFreeInvIndex = newInventory.findIndex((slot) => slot === null);
+          if (firstFreeInvIndex !== -1) {
+            newInventory[firstFreeInvIndex] = {
+              instanceId: `iap_chest_inv_${Date.now()}`,
+              itemId: product.chestGrantItemId,
+              tileState: 'normal',
+            };
+          } else {
+            // Both grid and inventory are full -> safely store in pendingRewards
+            newPendingRewards.push({
+              id: `pending_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              source: product.displayName,
+              title: 'Purchased Chest Reward',
+              itemId: product.chestGrantItemId,
+              createdAt: Date.now(),
+            });
+          }
+        }
+      }
+
+      const gemsToAdd = product.gemGrant || 0;
+      const coinsToAdd = product.coinGrant || 0;
+      const energyToAdd = product.energyGrant || 0;
+
+      const updatedOneTime = product.isOneTime
+        ? [...prev.purchasedOneTimeProductIds, product.sku]
+        : prev.purchasedOneTimeProductIds;
+
+      return {
+        ...prev,
+        gems: prev.gems + gemsToAdd,
+        coins: prev.coins + coinsToAdd,
+        energy: calculateEnergyGrant(prev.energy, energyToAdd, true),
+        grid: newGrid,
+        inventory: newInventory,
+        pendingRewards: newPendingRewards,
+        purchasedOneTimeProductIds: updatedOneTime,
+        processedTransactionIds: [...prev.processedTransactionIds, txId],
+        stats: {
+          ...prev.stats,
+          mockPurchasesCompleted: (prev.stats.mockPurchasesCompleted || 0) + 1,
+          gemsPurchased: (prev.stats.gemsPurchased || 0) + gemsToAdd,
+          coinsPurchased: (prev.stats.coinsPurchased || 0) + coinsToAdd,
+          energyPurchased: (prev.stats.energyPurchased || 0) + energyToAdd,
+          totalGemsEarned: prev.stats.totalGemsEarned + gemsToAdd,
+          totalCoinsEarned: prev.stats.totalCoinsEarned + coinsToAdd,
+        },
+      };
+    });
+
+    if (transactionProcessedSuccessfully) {
+      audio.playChestOpen();
+      confetti({ particleCount: 80, spread: 80, origin: { y: 0.4 } });
+      return { success: true };
+    } else {
+      return { success: false, error: 'Transaction could not be processed or was already claimed.' };
+    }
+  }, [state.purchasedOneTimeProductIds]);
+
+  // Restore Purchases
+  const restorePurchases = useCallback(async (): Promise<{ restoredSkus: string[]; message: string }> => {
+    const restored = await mockPurchaseProvider.restorePurchases(state.purchasedOneTimeProductIds);
+    return {
+      restoredSkus: restored,
+      message: restored.length > 0
+        ? `Successfully restored ${restored.length} one-time entitlement(s).`
+        : 'All eligible purchases are already restored on this account.',
+    };
+  }, [state.purchasedOneTimeProductIds]);
+
+  // Claim Pending Reward (when board/inventory space opens)
+  const claimPendingReward = useCallback((pendingId: string): boolean => {
+    const pending = state.pendingRewards.find((p) => p.id === pendingId);
+    if (!pending || !pending.itemId) return false;
+
+    let claimed = false;
+
+    setState((prev) => {
+      const newGrid = prev.grid.map((r) => [...r]);
+      const newInventory = [...prev.inventory];
+
+      const spawnedOnGrid = spawnItemOnFirstEmpty(newGrid, {
+        instanceId: `claimed_pending_${Date.now()}`,
+        itemId: pending.itemId!,
+        tileState: 'normal',
+      });
+
+      if (spawnedOnGrid) {
+        claimed = true;
+      } else {
+        const freeSlot = newInventory.findIndex((s) => s === null);
+        if (freeSlot !== -1) {
+          newInventory[freeSlot] = {
+            instanceId: `claimed_pending_inv_${Date.now()}`,
+            itemId: pending.itemId!,
+            tileState: 'normal',
+          };
+          claimed = true;
+        }
+      }
+
+      if (!claimed) return prev; // Still no space
+
+      return {
+        ...prev,
+        grid: newGrid,
+        inventory: newInventory,
+        pendingRewards: prev.pendingRewards.filter((p) => p.id !== pendingId),
+      };
+    });
+
+    if (claimed) {
+      audio.playOrderComplete();
+      confetti({ particleCount: 40, spread: 50 });
+    } else {
+      audio.playTone(200, 'sawtooth', 0.15, 0.1);
+    }
+
+    return claimed;
+  }, [state.pendingRewards]);
+
 
   // 13. Dev & Testing Helpers
   const devAddCoins = (amt = 500) => setState((p) => ({ ...p, coins: p.coins + amt }));
@@ -1256,6 +1512,31 @@ export function useGameState() {
     }));
   };
 
+  const devResetPurchases = () => {
+    setState((prev) => ({
+      ...prev,
+      processedTransactionIds: [],
+      purchasedOneTimeProductIds: [],
+      pendingRewards: [],
+    }));
+  };
+
+  const devAddPendingReward = (reward: { itemId: string; title: string; source: string }) => {
+    setState((prev) => ({
+      ...prev,
+      pendingRewards: [
+        ...prev.pendingRewards,
+        {
+          id: `dev_pending_${Date.now()}_${Math.random()}`,
+          source: reward.source,
+          title: reward.title,
+          itemId: reward.itemId,
+          createdAt: Date.now(),
+        },
+      ],
+    }));
+  };
+
   const updateSettings = (newSettings: GameState['settings']) => {
     setState((prev) => ({ ...prev, settings: newSettings }));
   };
@@ -1289,6 +1570,14 @@ export function useGameState() {
     claimDailyReward,
     claimDailyTask,
     claimDailyCompletionReward,
+    // Monetization actions
+    canSpendGems,
+    spendGems,
+    purchaseEnergyWithGems,
+    purchaseCoinsWithGems,
+    processStorePurchase,
+    restorePurchases,
+    claimPendingReward,
     advanceTutorial,
     dismissTutorial,
     grantXP,
@@ -1305,5 +1594,7 @@ export function useGameState() {
     devResetDailyClaim,
     devCompleteAllDailyTasks,
     devSetDailyRewardDay,
+    devResetPurchases,
+    devAddPendingReward,
   };
 }

@@ -4,6 +4,7 @@ export const BALANCE = {
   // === ENERGY SYSTEM ===
   STARTING_ENERGY: 100,
   MAX_ENERGY: 100,
+  ENERGY_OVERFLOW_CAP: 200, // Maximum allowed energy with bonuses/purchases/rewards
   ENERGY_REGEN_SECONDS: 120, // 1 energy per 120s (2 minutes) -> 200 min full refill
   ENERGY_REGEN_MS: 120 * 1000,
   ENERGY_COST_PER_TAP_DEFAULT: 1,
@@ -16,6 +17,18 @@ export const BALANCE = {
   LEVEL_6_INVENTORY_SLOTS: 6,
   LEVEL_18_INVENTORY_SLOTS: 7,
   LEVEL_28_INVENTORY_SLOTS: 8,
+
+  // === SHOP & PREMIUM GEM PRICING (Beta Defaults) ===
+  SHOP_ENERGY_OFFERS: [
+    { id: 'energy_30', energy: 30, gems: 15 },
+    { id: 'energy_60', energy: 60, gems: 25 },
+    { id: 'energy_100', energy: 100, gems: 40 },
+  ],
+  SHOP_COIN_OFFERS: [
+    { id: 'coins_500', coins: 500, gems: 20 },
+    { id: 'coins_1500', coins: 1500, gems: 50 },
+    { id: 'coins_4000', coins: 4000, gems: 110 },
+  ],
 
   // === TIMED BUBBLE SYSTEM ===
   BUBBLE_SPAWN_CHANCE_NORMAL: 0.04, // 4% chance on merge
@@ -117,3 +130,32 @@ export const BALANCE = {
   POST_CAP_XP_LABEL: 'Adventure Complete',
   POST_CAP_JOURNEY_TEXT: 'Your journey through the restored provinces continues. More adventures are coming to Wishenbloom.',
 };
+
+/**
+ * Centralized Energy Grant Helper.
+ * Distinguishes Normal Passive Cap (100) from Rewarded/Purchased Overflow Cap (200).
+ *
+ * Rules:
+ * 1. Passive / offline regeneration: never exceeds maxEnergy (100).
+ * 2. Rewarded & Purchased energy: may overflow up to ENERGY_OVERFLOW_CAP (200).
+ * 3. Rewarded & Purchased energy never exceeds ENERGY_OVERFLOW_CAP.
+ * 4. Zero or negative amounts return currentEnergy without change.
+ */
+export function calculateEnergyGrant(
+  currentEnergy: number,
+  amount: number,
+  allowOverflow: boolean = true,
+  maxEnergy: number = BALANCE.MAX_ENERGY,
+  overflowCap: number = BALANCE.ENERGY_OVERFLOW_CAP
+): number {
+  if (amount <= 0) return currentEnergy;
+
+  if (allowOverflow) {
+    // Rewarded or purchased energy can exceed maxEnergy up to overflowCap
+    return Math.min(overflowCap, currentEnergy + amount);
+  } else {
+    // Passive grants never exceed standard maxEnergy
+    return Math.max(currentEnergy, Math.min(maxEnergy, currentEnergy + amount));
+  }
+}
+

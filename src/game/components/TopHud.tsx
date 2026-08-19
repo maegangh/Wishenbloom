@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Wrench, Zap, Sparkles, Gift } from 'lucide-react';
+import { Settings, Wrench, Zap, Sparkles, Gift, ShoppingBag } from 'lucide-react';
 import { GameState } from '../types';
 import { CURRENT_MAX_PLAYER_LEVEL } from '../data/progression';
 import { BALANCE } from '../data/balance';
@@ -8,6 +8,7 @@ interface TopHudProps {
   state: GameState;
   onOpenSettings: () => void;
   onOpenDev: () => void;
+  onOpenShop?: () => void;
   onOpenEnergyShop?: () => void;
   onOpenDailyRewards?: () => void;
   hasUnclaimedDailyReward?: boolean;
@@ -17,6 +18,7 @@ export const TopHud: React.FC<TopHudProps> = ({
   state,
   onOpenSettings,
   onOpenDev,
+  onOpenShop,
   onOpenEnergyShop,
   onOpenDailyRewards,
   hasUnclaimedDailyReward,
@@ -31,6 +33,8 @@ export const TopHud: React.FC<TopHudProps> = ({
   const minutes = Math.floor(remainingSec / 60);
   const seconds = remainingSec % 60;
   const timeFormatted = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+  const hasPendingRewards = (state.pendingRewards || []).length > 0;
 
   return (
     <header className="w-full bg-slate-900/90 backdrop-blur-md border-b border-amber-500/20 px-3 py-2 text-white select-none z-30 shadow-md">
@@ -75,22 +79,30 @@ export const TopHud: React.FC<TopHudProps> = ({
         {/* Currencies (Coins, Gems, Energy) */}
         <div className="flex items-center gap-1.5 sm:gap-2 text-xs font-bold">
           {/* Coins */}
-          <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1 rounded-full border border-amber-500/30 shadow-inner">
+          <button
+            onClick={onOpenShop}
+            className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-750 px-2 py-1 rounded-full border border-amber-500/30 shadow-inner cursor-pointer transition"
+            title="Coins - Tap to view shop"
+          >
             <span className="text-amber-400 text-sm">🪙</span>
             <span className="text-amber-200 tracking-tight">{state.coins.toLocaleString()}</span>
-          </div>
+          </button>
 
           {/* Gems */}
-          <div className="flex items-center gap-1 bg-slate-800/80 px-2 py-1 rounded-full border border-purple-500/30 shadow-inner">
+          <button
+            onClick={onOpenShop}
+            className="flex items-center gap-1 bg-slate-800/80 hover:bg-slate-750 px-2 py-1 rounded-full border border-purple-500/30 shadow-inner cursor-pointer transition"
+            title="Gems - Tap to view market"
+          >
             <span className="text-purple-400 text-sm">💎</span>
             <span className="text-purple-200 tracking-tight">{state.gems}</span>
-          </div>
+          </button>
 
           {/* Energy */}
           <button
-            onClick={onOpenEnergyShop}
+            onClick={onOpenShop || onOpenEnergyShop}
             className="flex items-center gap-1 bg-cyan-950/80 hover:bg-cyan-900 px-2 py-1 rounded-full border border-cyan-500/40 shadow-inner cursor-pointer transition-colors"
-            title="Tap to view energy refill options"
+            title="Energy - Tap to refill"
           >
             <Zap className="w-3.5 h-3.5 text-cyan-400 fill-cyan-400 animate-pulse" />
             <span className="text-cyan-200 tracking-tight">
@@ -104,8 +116,22 @@ export const TopHud: React.FC<TopHudProps> = ({
           </button>
         </div>
 
-        {/* Actions (Daily Rewards, Dev & Settings) */}
+        {/* Actions (Shop, Daily Rewards, Dev & Settings) */}
         <div className="flex items-center gap-1">
+          {onOpenShop && (
+            <button
+              onClick={onOpenShop}
+              id="btn-open-shop"
+              className="relative p-1.5 rounded-lg bg-gradient-to-br from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold border border-yellow-300/50 transition-all cursor-pointer shadow"
+              title="Realm Market / Shop"
+            >
+              <ShoppingBag className="w-4 h-4 text-slate-950" />
+              {hasPendingRewards && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-slate-900 animate-pulse" />
+              )}
+            </button>
+          )}
+
           {onOpenDailyRewards && (
             <button
               onClick={onOpenDailyRewards}
@@ -141,3 +167,4 @@ export const TopHud: React.FC<TopHudProps> = ({
     </header>
   );
 };
+

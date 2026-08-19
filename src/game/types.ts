@@ -165,6 +165,44 @@ export interface GameStats {
   totalGemsEarned: number;
   totalGeneratorsTapped: number;
   kingdomAreasCompleted: number;
+  // Monetization / Local Telemetry Counters (Development only)
+  mockPurchasesCompleted?: number;
+  gemsPurchased?: number;
+  gemsSpent?: number;
+  energyPurchased?: number;
+  coinsPurchased?: number;
+}
+
+export interface PendingReward {
+  id: string;
+  source: string; // e.g. 'Bloomkeeper Welcome Pack', 'Store Purchase'
+  title: string;
+  itemId?: string; // e.g. 'chest_royal_3'
+  coins?: number;
+  gems?: number;
+  energy?: number;
+  createdAt: number;
+}
+
+export type StoreProductType = 'gem_pack' | 'energy_pack' | 'coin_pack' | 'bundle';
+
+export interface StoreProduct {
+  id: string;
+  sku: string;
+  type: StoreProductType;
+  displayName: string;
+  description: string;
+  previewPrice: string; // e.g. '$0.99', '$2.99', '15 💎'
+  realCurrencyPrice?: number; // Optional numerical USD for future backend mapping
+  gemCost?: number; // In-game gem price for Gem-spend offers (Energy, Coins)
+  gemGrant?: number;
+  coinGrant?: number;
+  energyGrant?: number;
+  chestGrantItemId?: string;
+  isOneTime?: boolean;
+  isFeatured?: boolean;
+  badge?: string; // e.g. 'One-Time Special', 'Popular', 'Best Value'
+  icon: string;
 }
 
 export interface CompendiumMilestone {
@@ -238,6 +276,11 @@ export interface GameState {
   dailyTasksDateKey: string; // e.g. "2026-08-18" (UTC)
   dailyTasks: DailyTaskState[];
   dailyCompletionClaimed: boolean;
+
+  // Monetization & IAP State
+  processedTransactionIds: string[];
+  purchasedOneTimeProductIds: string[]; // e.g. ['wishenbloom_starter_bloomkeeper']
+  pendingRewards: PendingReward[];
 
   // Kingdom Restoration
   kingdomAreas: KingdomArea[];

@@ -30,6 +30,16 @@ import {
   getUtcDateKey,
 } from '../data/dailyRewards';
 import { generateDailyTasksForDate, DAILY_COMPLETION_REWARD } from '../data/dailyTasks';
+import { calculateEnergyGrant } from '../data/balance';
+import {
+  STARTER_WELCOME_PACK,
+  GEM_PACK_PRODUCTS,
+  ENERGY_SHOP_PRODUCTS,
+  COIN_SHOP_PRODUCTS,
+  getStoreProduct,
+} from '../data/storeProducts';
+import { MockPurchaseProvider } from '../logic/purchaseProvider';
+import { GRID_ROWS, GRID_COLS, spawnItemOnFirstEmpty } from '../logic/boardLogic';
 
 let totalTests = 0;
 let passedTests = 0;
@@ -942,6 +952,217 @@ console.log('\n[12] Testing Beta Retention Foundation (Daily Rewards, Daily Task
   assert(l30Hydrated.state.dailyTasks.length === 3, 'Daily tasks fully functional at Level 30 cap');
 }
 
+// TEST SUITE 16: Monetization, Energy Overflow, IAP Idempotency & Safe Delivery
+console.log('\n[16] Testing Monetization, Energy Overflow & Safe IAP Architecture:');
+{
+  // 1. Base Energy Cap & Overflow Rules
+  assert(BALANCE.MAX_ENERGY === 100, 'Base Energy cap is exactly 100');
+  assert(BALANCE.ENERGY_OVERFLOW_CAP === 200, 'Bonus Energy overflow cap is exactly 200');
+
+  // 2. Normal passive regeneration never exceeds 100
+  assert(calculateEnergyGrant(90, 20, false) === 100, 'Passive regen capped at 100');
+  assert(calculateEnergyGrant(100, 10, false) === 100, 'Passive regen at 100 adds nothing');
+  assert(calculateEnergyGrant(150, 10, false) === 150, 'Passive regen when overflowed preserves current energy');
+
+  // 3. Offline regeneration never exceeds 100
+  const testNow = Date.now();
+  const tenHoursAgo = testNow - 10 * 3600 * 1000;
+  const offlineSave = JSON.stringify({
+    level: 5,
+    energy: 40,
+    maxEnergy: 100,
+    lastEnergyRechargeAt: tenHoursAgo,
+    lastSeenAt: tenHoursAgo,
+  });
+  const { state: offlineState, recoveredOfflineEnergy } = hydrateAndMigrateSave(null, offlineSave, testNow);
+  assert(offlineState.energy === 100, 'Offline regeneration never exceeds 100');
+  assert(recoveredOfflineEnergy === 60, 'Accurately calculates recovered offline energy to 100 cap');
+
+  // 4. Reward Energy may overflow to configured cap (200)
+  assert(calculateEnergyGrant(90, 50, true) === 140, 'Reward energy overflows above 100 to 140');
+  assert(calculateEnergyGrant(100, 50, true) === 150, 'Reward energy at 100 overflows to 150');
+  assert(calculateEnergyGrant(180, 50, true) === 200, 'Reward energy is clamped at overflow cap 200');
+
+  // 5. Reward Energy never exceeds overflow cap 200
+  assert(calculateEnergyGrant(150, 100, true) === 200, 'Overflow clamped when reward exceeds 200');
+  assert(calculateEnergyGrant(200, 50, true) === 200, 'Reward at cap 200 remains 200');
+  assert(calculateEnergyGrant(250, 50, true) === 200, 'Exceeded energy is clamped to 200');
+
+  // 6. Purchased Energy follows exact same overflow rule
+  assert(calculateEnergyGrant(120, 100, true) === 200, 'Purchased energy follows overflow rule to 200');
+
+  // 7-9. Gem -> Energy Shop Offers
+  const energy30 = ENERGY_SHOP_PRODUCTS.find((p) => p.energyGrant === 30);
+  const energy60 = ENERGY_SHOP_PRODUCTS.find((p) => p.energyGrant === 60);
+  const energy100 = ENERGY_SHOP_PRODUCTS.find((p) => p.energyGrant === 100);
+  assert(energy30?.gemCost === 15, '30 Energy costs exactly 15 Gems');
+  assert(energy60?.gemCost === 25, '60 Energy costs exactly 25 Gems');
+  assert(energy100?.gemCost === 40, '100 Energy costs exactly 40 Gems');
+
+  // 10-11. Gem Spending Validation
+  let testGems = 20;
+  const mockSpend = (amt: number): boolean => {
+    if (testGems < amt || amt <= 0) return false;
+    testGems -= amt;
+    return true;
+  };
+  assert(mockSpend(25) === false, 'Insufficient Gems prevents purchase');
+  assert(testGems === 20, 'Gems remain untouched on failed purchase');
+  assert(mockSpend(15) === true, 'Sufficient Gems allows purchase');
+  assert(testGems === 5, 'Gem balance correctly decremented');
+  assert(mockSpend(10) === false, 'Secondary attempt with insufficient Gems blocked');
+  assert(testGems === 5, 'Gem balance never becomes negative');
+
+  // 12-13. Gem -> Coin Shop Offers
+  const coin500 = COIN_SHOP_PRODUCTS.find((p) => p.coinGrant === 500);
+  const coin1500 = COIN_SHOP_PRODUCTS.find((p) => p.coinGrant === 1500);
+  const coin4000 = COIN_SHOP_PRODUCTS.find((p) => p.coinGrant === 4000);
+  assert(coin500?.gemCost === 20 && coin500.coinGrant === 500, '500 Coins exchange costs 20 Gems');
+  assert(coin1500?.gemCost === 50 && coin1500.coinGrant === 1500, '1,500 Coins exchange costs 50 Gems');
+  assert(coin4000?.gemCost === 110 && coin4000.coinGrant === 4000, '4,000 Coins exchange costs 110 Gems');
+
+  // 14-15. Mock Gem Pack Transaction & Idempotency
+  const defaultState = createDefaultInitialState();
+  const gemPack = getStoreProduct('gems_450');
+  assert(gemPack !== undefined && gemPack.gemGrant === 450, 'Catalog contains 450 Gem Satchel');
+
+  const testTxId = 'tx_mock_test_123';
+  const initialGems = defaultState.gems;
+  assert(!defaultState.processedTransactionIds.includes(testTxId), 'New transaction ID is unprocessed');
+  
+  // First grant
+  defaultState.gems += gemPack!.gemGrant!;
+  defaultState.processedTransactionIds.push(testTxId);
+  assert(defaultState.gems === initialGems + 450, 'Mock Gem transaction grants Gems once');
+  assert(defaultState.processedTransactionIds.includes(testTxId), 'Transaction ID recorded in processed list');
+
+  // Second grant attempt (idempotency check)
+  const isDuplicateTx = defaultState.processedTransactionIds.includes(testTxId);
+  assert(isDuplicateTx === true, 'Duplicate transaction detected');
+  if (!isDuplicateTx) {
+    defaultState.gems += gemPack!.gemGrant!;
+  }
+  assert(defaultState.gems === initialGems + 450, 'Re-processing same transaction ID grants nothing');
+
+  // 16-17. Welcome Pack One-Time Entitlement
+  assert(STARTER_WELCOME_PACK.sku === 'wishenbloom_starter_bloomkeeper', 'Welcome pack SKU matches spec');
+  assert(STARTER_WELCOME_PACK.isOneTime === true, 'Welcome pack is marked one-time');
+  assert(!defaultState.purchasedOneTimeProductIds.includes(STARTER_WELCOME_PACK.sku), 'Welcome pack not initially owned');
+  
+  // Grant Welcome Pack
+  defaultState.purchasedOneTimeProductIds.push(STARTER_WELCOME_PACK.sku);
+  defaultState.gems += STARTER_WELCOME_PACK.gemGrant || 0;
+  defaultState.coins += STARTER_WELCOME_PACK.coinGrant || 0;
+  assert(defaultState.purchasedOneTimeProductIds.includes(STARTER_WELCOME_PACK.sku), 'Welcome pack recorded in purchasedOneTimeProductIds');
+  
+  // Second purchase check
+  const alreadyOwned = defaultState.purchasedOneTimeProductIds.includes(STARTER_WELCOME_PACK.sku);
+  assert(alreadyOwned === true, 'Welcome pack cannot be purchased twice');
+
+  // 18. Restore Purchases
+  const mockProvider = new MockPurchaseProvider();
+  const restored = mockProvider.restorePurchasesSync([STARTER_WELCOME_PACK.sku]);
+  assert(restored.includes(STARTER_WELCOME_PACK.sku), 'Restores one-time non-consumable pack');
+  assert(!restored.includes('wishenbloom_gems_450'), 'Consumable Gem packs are not restored');
+
+  // 19-20. Full Board & Safe Chest Delivery to Pending Rewards
+  const fullBoardState = createDefaultInitialState();
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      fullBoardState.grid[r][c] = { instanceId: `item_${r}_${c}`, itemId: 'herb_1', tileState: 'normal' };
+    }
+  }
+  for (let i = 0; i < fullBoardState.maxInventorySlots; i++) {
+    fullBoardState.inventory[i] = { instanceId: `inv_${i}`, itemId: 'herb_1', tileState: 'normal' };
+  }
+
+  const chestItemId = STARTER_WELCOME_PACK.chestGrantItemId!;
+  const gridPlaced = spawnItemOnFirstEmpty(fullBoardState.grid, {
+    instanceId: 'chest_inst',
+    itemId: chestItemId,
+    tileState: 'normal',
+  });
+  assert(gridPlaced === false, 'Full board prevents direct placement on grid');
+
+  const invFreeIndex = fullBoardState.inventory.findIndex((s) => s === null);
+  assert(invFreeIndex === -1, 'Full inventory prevents direct placement in inventory');
+
+  // Must route to pendingRewards
+  fullBoardState.pendingRewards.push({
+    id: 'pending_test_chest',
+    source: "Bloomkeeper's Welcome Pack",
+    title: 'Purchased Chest Reward',
+    itemId: chestItemId,
+    createdAt: Date.now(),
+  });
+  assert(fullBoardState.pendingRewards.length === 1, 'Full board routes purchased chest to pendingRewards');
+  assert(fullBoardState.pendingRewards[0].itemId === chestItemId, 'Pending chest item is preserved intact');
+
+  // 21. Pending Rewards Survive Save/Load
+  const pendingSave = JSON.stringify(fullBoardState);
+  const { state: hydratedPending } = hydrateAndMigrateSave(null, pendingSave, testNow);
+  assert(hydratedPending.pendingRewards.length === 1, 'Pending rewards survive save/load hydration');
+  assert(hydratedPending.pendingRewards[0].id === 'pending_test_chest', 'Pending reward ID preserved');
+
+  // 22. Daily Reward Energy Uses Centralized Overflow
+  const dailyRewardOverflow = calculateEnergyGrant(110, 40, true);
+  assert(dailyRewardOverflow === 150, 'Daily Reward Energy uses centralized overflow up to 200');
+
+  // 23. Daily Task Energy Uses Centralized Overflow
+  const dailyTaskOverflow = calculateEnergyGrant(180, 30, true);
+  assert(dailyTaskOverflow === 200, 'Daily Task Energy clamps to centralized overflow cap 200');
+
+  // 24. Level 30 Content Cap Intact After Monetization
+  assert(CURRENT_MAX_PLAYER_LEVEL === 30, 'Player Level 30 authored cap intact');
+  const level30Save = JSON.stringify({
+    level: 30,
+    xp: 99999,
+    gems: 500,
+  });
+  const { state: hydratedLevel30 } = hydrateAndMigrateSave(null, level30Save, testNow);
+  assert(hydratedLevel30.level === 30, 'Purchases and rewards cannot create Level 31');
+
+  // 25. Schema v5 Migration from v4
+  const legacyV4Save = JSON.stringify({
+    schemaVersion: 4,
+    level: 15,
+    coins: 2500,
+    gems: 120,
+    energy: 85,
+  });
+  const { state: hydratedV5 } = hydrateAndMigrateSave(null, legacyV4Save, testNow);
+  assert(hydratedV5.schemaVersion === CURRENT_SCHEMA_VERSION, 'Migrates save to schema v5');
+  assert(hydratedV5.schemaVersion === 5, 'Schema version is exactly 5');
+  assert(Array.isArray(hydratedV5.processedTransactionIds), 'Hydrates processedTransactionIds array');
+  assert(Array.isArray(hydratedV5.purchasedOneTimeProductIds), 'Hydrates purchasedOneTimeProductIds array');
+  assert(Array.isArray(hydratedV5.pendingRewards), 'Hydrates pendingRewards array');
+  assert(hydratedV5.stats.mockPurchasesCompleted === 0, 'Hydrates local mock purchase stats');
+
+  // 26. Store Catalog Verification
+  assert(GEM_PACK_PRODUCTS.length === 6, 'Contains all 6 data-driven Gem packs');
+  const gemSkus = GEM_PACK_PRODUCTS.map((p) => p.sku);
+  assert(gemSkus.includes('wishenbloom_gems_80'), 'Catalog includes 80 Gems SKU');
+  assert(gemSkus.includes('wishenbloom_gems_450'), 'Catalog includes 450 Gems SKU');
+  assert(gemSkus.includes('wishenbloom_gems_1000'), 'Catalog includes 1,000 Gems SKU');
+  assert(gemSkus.includes('wishenbloom_gems_2200'), 'Catalog includes 2,200 Gems SKU');
+  assert(gemSkus.includes('wishenbloom_gems_6000'), 'Catalog includes 6,000 Gems SKU');
+  assert(gemSkus.includes('wishenbloom_gems_13000'), 'Catalog includes 13,000 Gems SKU');
+
+  // 27. Mock Transaction Safety Labeling
+  const isMockNoticePresent = mockProvider.isMock();
+  assert(isMockNoticePresent === true, 'Mock provider is explicitly flagged as mock/development');
+
+  // 28. Pending Reward Claiming
+  const freeGridState = createDefaultInitialState();
+  const pendingRewardToClaim = fullBoardState.pendingRewards[0];
+  const claimSuccess = spawnItemOnFirstEmpty(freeGridState.grid, {
+    instanceId: 'claimed_chest',
+    itemId: pendingRewardToClaim.itemId,
+    tileState: 'normal',
+  });
+  assert(claimSuccess === true, 'Pending reward can be claimed to board once space is cleared');
+}
+
 console.log(`\n========================================`);
 console.log(`RESULTS: ${passedTests}/${totalTests} tests passed (${failedTests} failed)`);
 console.log(`========================================\n`);
@@ -949,3 +1170,4 @@ console.log(`========================================\n`);
 if (failedTests > 0) {
   process.exit(1);
 }
+

@@ -14,6 +14,7 @@ import { DiscoveryModal } from './game/components/DiscoveryModal';
 import { SettingsModal } from './game/components/SettingsModal';
 import { DevPanel } from './game/components/DevPanel';
 import { EnergyShopModal } from './game/components/EnergyShopModal';
+import { ShopModal } from './game/components/ShopModal';
 import { TutorialOverlay } from './game/components/TutorialOverlay';
 import { DailyRewardModal } from './game/components/DailyRewardModal';
 import { OfflineEnergyModal } from './game/components/OfflineEnergyModal';
@@ -46,6 +47,11 @@ export default function App() {
     claimDailyReward,
     claimDailyTask,
     claimDailyCompletionReward,
+    purchaseEnergyWithGems,
+    purchaseCoinsWithGems,
+    processStorePurchase,
+    restorePurchases,
+    claimPendingReward,
     advanceTutorial,
     dismissTutorial,
     updateSettings,
@@ -60,11 +66,14 @@ export default function App() {
     devResetDailyClaim,
     devCompleteAllDailyTasks,
     devSetDailyRewardDay,
+    devResetPurchases,
+    devAddPendingReward,
   } = useGameState();
 
   const [activeTab, setActiveTab] = useState<MainTab>('board');
   const [showSettings, setShowSettings] = useState(false);
   const [showDev, setShowDev] = useState(false);
+  const [showShop, setShowShop] = useState(false);
   const [showEnergyShop, setShowEnergyShop] = useState(false);
   const [showDailyRewards, setShowDailyRewards] = useState(false);
 
@@ -96,7 +105,8 @@ export default function App() {
           state={state}
           onOpenSettings={() => setShowSettings(true)}
           onOpenDev={() => setShowDev(true)}
-          onOpenEnergyShop={() => setShowEnergyShop(true)}
+          onOpenShop={() => setShowShop(true)}
+          onOpenEnergyShop={() => setShowShop(true)}
           onOpenDailyRewards={() => setShowDailyRewards(true)}
           hasUnclaimedDailyReward={hasUnclaimedDailyReward}
         />
@@ -251,7 +261,22 @@ export default function App() {
             onResetDailyClaim={devResetDailyClaim}
             onCompleteAllDailyTasks={devCompleteAllDailyTasks}
             onSetDailyRewardDay={devSetDailyRewardDay}
+            onResetPurchases={devResetPurchases}
+            onAddPendingReward={devAddPendingReward}
             onClose={() => setShowDev(false)}
+          />
+        )}
+
+        {showShop && (
+          <ShopModal
+            isOpen={showShop}
+            state={state}
+            onClose={() => setShowShop(false)}
+            onPurchaseEnergyWithGems={purchaseEnergyWithGems}
+            onPurchaseCoinsWithGems={purchaseCoinsWithGems}
+            onProcessStorePurchase={processStorePurchase}
+            onRestorePurchases={restorePurchases}
+            onClaimPendingReward={claimPendingReward}
           />
         )}
 

@@ -17,6 +17,8 @@ interface DevPanelProps {
   onResetDailyClaim?: () => void;
   onCompleteAllDailyTasks?: () => void;
   onSetDailyRewardDay?: (day: number) => void;
+  onResetPurchases?: () => void;
+  onAddPendingReward?: (reward: { itemId: string; title: string; source: string }) => void;
   onClose: () => void;
 }
 
@@ -33,6 +35,8 @@ export const DevPanel: React.FC<DevPanelProps> = ({
   onResetDailyClaim,
   onCompleteAllDailyTasks,
   onSetDailyRewardDay,
+  onResetPurchases,
+  onAddPendingReward,
   onClose,
 }) => {
   const [selectedSpawnItem, setSelectedSpawnItem] = useState('herb_3');
@@ -224,6 +228,39 @@ export const DevPanel: React.FC<DevPanelProps> = ({
               <Plus className="w-3.5 h-3.5" />
               <span>Spawn</span>
             </button>
+          </div>
+        </div>
+
+        {/* Monetization & Store Operations */}
+        <div className="pt-3 border-t border-slate-800 space-y-2">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            Monetization & Store
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {onResetPurchases && (
+              <button
+                onClick={onResetPurchases}
+                className="p-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/50 text-purple-300 border border-purple-800/40 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <RefreshCw className="w-3 h-3" />
+                <span>Reset Store Entitlements</span>
+              </button>
+            )}
+            {onAddPendingReward && (
+              <button
+                onClick={() =>
+                  onAddPendingReward({
+                    itemId: 'chest_royal_3',
+                    title: 'Test Royal Chest',
+                    source: 'Dev Test Simulation',
+                  })
+                }
+                className="p-2 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-800/40 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Gift className="w-3 h-3" />
+                <span>+ Test Pending Chest</span>
+              </button>
+            )}
           </div>
         </div>
 

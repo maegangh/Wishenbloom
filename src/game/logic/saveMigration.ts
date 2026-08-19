@@ -10,7 +10,7 @@ import { resolveExpiredBubbles } from './bubbleLogic';
 
 export const PRIMARY_STORAGE_KEY = 'wishenbloom_save_v1';
 export const LEGACY_STORAGE_KEY = 'mergevale_save_v1'; // Legacy key for backward compatibility
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 export const ENERGY_RECHARGE_SECONDS = 120; // 1 energy every 2 minutes
 
 /**
@@ -66,6 +66,11 @@ export function createDefaultInitialState(now: number = Date.now()): GameState {
     dailyTasks: generateDailyTasksForDate(grid, inventory, 1, todayKey),
     dailyCompletionClaimed: false,
 
+    // Monetization & IAP State
+    processedTransactionIds: [],
+    purchasedOneTimeProductIds: [],
+    pendingRewards: [],
+
     discoveredItemIds: ['herb_1', 'chest_wooden'],
     claimedDiscoveryRewardIds: [],
     claimedLevelRewardIds: [],
@@ -87,6 +92,11 @@ export function createDefaultInitialState(now: number = Date.now()): GameState {
       totalGemsEarned: 20,
       totalGeneratorsTapped: 0,
       kingdomAreasCompleted: 0,
+      mockPurchasesCompleted: 0,
+      gemsPurchased: 0,
+      gemsSpent: 0,
+      energyPurchased: 0,
+      coinsPurchased: 0,
     },
     lastSavedAt: now,
     lastSeenAt: now,
@@ -276,6 +286,11 @@ export function hydrateAndMigrateSave(
       dailyTasksDateKey,
       dailyTasks,
       dailyCompletionClaimed,
+
+      // Monetization & IAP State
+      processedTransactionIds: Array.isArray(parsed.processedTransactionIds) ? parsed.processedTransactionIds : [],
+      purchasedOneTimeProductIds: Array.isArray(parsed.purchasedOneTimeProductIds) ? parsed.purchasedOneTimeProductIds : [],
+      pendingRewards: Array.isArray(parsed.pendingRewards) ? parsed.pendingRewards : [],
 
       kingdomAreas,
 
