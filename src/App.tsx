@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from './game/state/useGameState';
 import { TopHud } from './game/components/TopHud';
 import { OrderBar } from './game/components/OrderBar';
@@ -15,6 +15,9 @@ import { SettingsModal } from './game/components/SettingsModal';
 import { DevPanel } from './game/components/DevPanel';
 import { EnergyShopModal } from './game/components/EnergyShopModal';
 import { TutorialOverlay } from './game/components/TutorialOverlay';
+import { DailyRewardModal } from './game/components/DailyRewardModal';
+import { OfflineEnergyModal } from './game/components/OfflineEnergyModal';
+import { isDailyRewardClaimable } from './game/data/dailyRewards';
 
 export default function App() {
   const {
@@ -25,6 +28,8 @@ export default function App() {
     setLevelUpData,
     discoveryPopupItem,
     setDiscoveryPopupItem,
+    offlineEnergyRecovered,
+    setOfflineEnergyRecovered,
     tapGenerator,
     upgradeGenerator,
     moveOrMergeItem,
@@ -38,6 +43,9 @@ export default function App() {
     claimQuest,
     claimDiscoveryReward,
     claimCompendiumMilestone,
+    claimDailyReward,
+    claimDailyTask,
+    claimDailyCompletionReward,
     advanceTutorial,
     dismissTutorial,
     updateSettings,
@@ -48,15 +56,32 @@ export default function App() {
     devSpawnItem,
     devClearBoard,
     devResetSave,
+    devSimulateNextDay,
+    devResetDailyClaim,
+    devCompleteAllDailyTasks,
+    devSetDailyRewardDay,
   } = useGameState();
 
   const [activeTab, setActiveTab] = useState<MainTab>('board');
   const [showSettings, setShowSettings] = useState(false);
   const [showDev, setShowDev] = useState(false);
   const [showEnergyShop, setShowEnergyShop] = useState(false);
+  const [showDailyRewards, setShowDailyRewards] = useState(false);
+
+  const hasUnclaimedDailyReward = isDailyRewardClaimable(state.lastDailyRewardClaimDate);
 
   // Check badges for unclaimed rewards
-  const hasUnclaimedQuests = state.activeQuests.some((q) => q.isCompleted && !q.isClaimed);
+  const hasUnclaimedDailyTasks = (state.dailyTasks || []).some((t) => t.isCompleted && !t.isClaimed);
+  const hasUnclaimedDailyCompletion =
+    (state.dailyTasks || []).length > 0 &&
+    (state.dailyTasks || []).every((t) => t.isCompleted) &&
+    !state.dailyCompletionClaimed;
+
+  const hasUnclaimedQuests =
+    state.activeQuests.some((q) => q.isCompleted && !q.isClaimed) ||
+    hasUnclaimedDailyTasks ||
+    hasUnclaimedDailyCompletion;
+
   const hasUnclaimedDiscoveries = state.discoveredItemIds.some(
     (id) => !state.claimedDiscoveryRewardIds.includes(id)
   );
@@ -72,6 +97,8 @@ export default function App() {
           onOpenSettings={() => setShowSettings(true)}
           onOpenDev={() => setShowDev(true)}
           onOpenEnergyShop={() => setShowEnergyShop(true)}
+          onOpenDailyRewards={() => setShowDailyRewards(true)}
+          hasUnclaimedDailyReward={hasUnclaimedDailyReward}
         />
 
         {/* Main Content Area Based on Active Tab */}
@@ -133,7 +160,11 @@ export default function App() {
           {activeTab === 'quests' && (
             <QuestModal
               quests={state.activeQuests}
+              dailyTasks={state.dailyTasks || []}
+              dailyCompletionClaimed={state.dailyCompletionClaimed || false}
               onClaimQuest={claimQuest}
+              onClaimDailyTask={claimDailyTask}
+              onClaimDailyCompletionReward={claimDailyCompletionReward}
             />
           )}
         </main>
@@ -163,6 +194,24 @@ export default function App() {
         />
 
         {/* Modals & Overlays */}
+        {showDailyRewards && (
+          <DailyRewardModal
+            currentCycleDay={state.dailyRewardCycleDay || 1}
+            lastClaimDate={state.lastDailyRewardClaimDate}
+            onClaim={claimDailyReward}
+            onClose={() => setShowDailyRewards(false)}
+          />
+        )}
+
+        {offlineEnergyRecovered > 0 && (
+          <OfflineEnergyModal
+            recoveredEnergy={offlineEnergyRecovered}
+            currentEnergy={state.energy}
+            maxEnergy={state.maxEnergy}
+            onClose={() => setOfflineEnergyRecovered(0)}
+          />
+        )}
+
         {levelUpData && (
           <LevelUpModal
             level={levelUpData.level}
@@ -198,6 +247,10 @@ export default function App() {
             onSpawnItem={devSpawnItem}
             onClearBoard={devClearBoard}
             onResetSave={devResetSave}
+            onSimulateNextDay={devSimulateNextDay}
+            onResetDailyClaim={devResetDailyClaim}
+            onCompleteAllDailyTasks={devCompleteAllDailyTasks}
+            onSetDailyRewardDay={devSetDailyRewardDay}
             onClose={() => setShowDev(false)}
           />
         )}

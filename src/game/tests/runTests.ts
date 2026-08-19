@@ -22,6 +22,15 @@ import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
 import { BoardItem, NPCOrder } from '../types';
 
+import {
+  DAILY_REWARDS_CYCLE,
+  getDailyRewardForDay,
+  getNextDailyRewardCycleDay,
+  isDailyRewardClaimable,
+  getUtcDateKey,
+} from '../data/dailyRewards';
+import { generateDailyTasksForDate, DAILY_COMPLETION_REWARD } from '../data/dailyTasks';
+
 let totalTests = 0;
 let passedTests = 0;
 let failedTests = 0;
@@ -756,6 +765,181 @@ console.log('\n[11] Testing Player Level 30 Content Cap & Post-Chapter Safety In
 
   // 20. Future max-level configuration can be changed without rewriting progression logic
   assert(typeof CURRENT_MAX_PLAYER_LEVEL === 'number', 'CURRENT_MAX_PLAYER_LEVEL is configuration-driven');
+}
+
+// TEST SUITE 12: Beta Retention Foundation (Daily Rewards + Daily Tasks + Return Player Systems)
+console.log('\n[12] Testing Beta Retention Foundation (Daily Rewards, Daily Tasks, Return Player Systems):');
+{
+  // 1. 7-Day Daily Reward Cycle Structure
+  assert(DAILY_REWARDS_CYCLE.length === 7, 'Daily rewards cycle has exactly 7 days');
+  assert(DAILY_REWARDS_CYCLE[0].day === 1 && DAILY_REWARDS_CYCLE[6].day === 7, 'Daily rewards span Day 1 to Day 7');
+  assert(DAILY_REWARDS_CYCLE[6].rewards.chestItemId === 'chest_royal_3', 'Day 7 grand reward awards a Royal Chest');
+
+  // 2. Daily Reward Cycle Day Retrieval & Progression
+  const day1Reward = getDailyRewardForDay(1);
+  assert(day1Reward.day === 1 && (day1Reward.rewards.energy || 0) > 0, 'Day 1 reward provides energy boost');
+  assert(getNextDailyRewardCycleDay(1) === 2, 'Day 1 advances to Day 2');
+  assert(getNextDailyRewardCycleDay(6) === 7, 'Day 6 advances to Day 7');
+  assert(getNextDailyRewardCycleDay(7) === 1, 'Day 7 wraps smoothly back to Day 1');
+
+  // 3. UTC Date Key Calculation & Daily Claim Status
+  const testNow = Date.UTC(2026, 4, 15, 14, 30, 0); // 2026-05-15T14:30:00Z
+  const todayKey = getUtcDateKey(testNow);
+  assert(todayKey === '2026-05-15', 'UTC date key formats to YYYY-MM-DD');
+
+  // 4. Claimable State Checks
+  assert(isDailyRewardClaimable(null, testNow) === true, 'Never claimed reward is claimable');
+  assert(isDailyRewardClaimable('2026-05-14', testNow) === true, 'Claimed yesterday is claimable today');
+  assert(isDailyRewardClaimable('2026-05-15', testNow) === false, 'Claimed today is NOT claimable again today');
+
+  // 5. Non-Punitive Daily Cycle (Missed Days)
+  // If player was on Day 3 and didn't log in for 5 days, when they return their dailyRewardCycleDay is still 3.
+  const missedDaysSave = JSON.stringify({
+    level: 15,
+    dailyRewardCycleDay: 3,
+    lastDailyRewardClaimDate: '2026-05-01',
+  });
+  const hydratedMissed = hydrateAndMigrateSave(null, missedDaysSave, testNow);
+  assert(hydratedMissed.state.dailyRewardCycleDay === 3, 'Missed days do NOT reset or punish player (remains on Day 3)');
+  assert(isDailyRewardClaimable(hydratedMissed.state.lastDailyRewardClaimDate, testNow) === true, 'Ready to claim upon return');
+
+  // 6. Daily Tasks Generation
+  const l5Board: (BoardItem | null)[][] = [
+    [{ instanceId: 'g1', itemId: 'herb_1', isGenerator: true, generatorId: 'gen_garden_1', tileState: 'normal' }],
+    [{ instanceId: 'g2', itemId: 'potion_1', isGenerator: true, generatorId: 'gen_alchemist_1', tileState: 'normal' }],
+  ];
+  const generatedTasks = generateDailyTasksForDate(l5Board, [], 5, '2026-05-15');
+  assert(generatedTasks.length === 3, 'Generates exactly 3 daily tasks');
+  const taskIds = new Set(generatedTasks.map((t) => t.id));
+  assert(taskIds.size === 3, 'All 3 daily tasks are distinct');
+
+  // 7. Tasks Respect Player Capabilities & Board
+  generatedTasks.forEach((t) => {
+    assert(t.target > 0, `Task ${t.id} has positive target (${t.target})`);
+    assert(t.current === 0, `Task ${t.id} starts at 0 progress`);
+    assert(t.isCompleted === false, `Task ${t.id} starts uncompleted`);
+    assert(t.isClaimed === false, `Task ${t.id} starts unclaimed`);
+  });
+
+  // 8. Deterministic Generation for Same Date Key
+  const regeneratedTasks = generateDailyTasksForDate(l5Board, [], 5, '2026-05-15');
+  assert(
+    regeneratedTasks.map((t) => t.id).join(',') === generatedTasks.map((t) => t.id).join(','),
+    'Daily task generation is deterministic for the same date & level'
+  );
+
+  // 9. Daily Completion Bonus Specification
+  assert(DAILY_COMPLETION_REWARD.coins >= 250, 'Daily completion bonus awards >= 250 Coins');
+  assert(DAILY_COMPLETION_REWARD.energy >= 20, 'Daily completion bonus awards >= 20 Energy');
+  assert(DAILY_COMPLETION_REWARD.gems >= 2, 'Daily completion bonus awards >= 2 Gems');
+  assert(DAILY_COMPLETION_REWARD.chestItemId === 'chest_wood_1', 'Daily completion bonus awards Wooden Chest');
+
+  // 10. Schema v4 Migration & Hydration Defaults
+  const v3Save = JSON.stringify({
+    level: 10,
+    coins: 500,
+    schemaVersion: 3,
+  });
+  const migratedV4 = hydrateAndMigrateSave(null, v3Save, testNow);
+  assert(migratedV4.state.schemaVersion === CURRENT_SCHEMA_VERSION, 'Migrates to current schema version');
+  assert(migratedV4.state.dailyRewardCycleDay === 1, 'Default dailyRewardCycleDay is 1');
+  assert(migratedV4.state.lastDailyRewardClaimDate === null, 'Default lastDailyRewardClaimDate is null');
+  assert(migratedV4.state.dailyTasksDateKey === '2026-05-15', 'Hydrates with current UTC date key');
+  assert(migratedV4.state.dailyTasks.length === 3, 'Hydrates with 3 active daily tasks');
+  assert(migratedV4.state.dailyCompletionClaimed === false, 'Default dailyCompletionClaimed is false');
+
+  // 11. Rollover on Date Change
+  const oldDayTasks = [
+    {
+      id: 'task_merge_items',
+      title: 'Yesterday Task',
+      description: 'Old task',
+      target: 20,
+      current: 20,
+      isCompleted: true,
+      isClaimed: true,
+      rewards: { coins: 50 },
+    },
+  ];
+  const oldDaySave = JSON.stringify({
+    level: 12,
+    dailyTasksDateKey: '2026-05-14',
+    dailyTasks: oldDayTasks,
+    dailyCompletionClaimed: true,
+  });
+  const rolledOver = hydrateAndMigrateSave(null, oldDaySave, testNow);
+  assert(rolledOver.state.dailyTasksDateKey === '2026-05-15', 'Date key updates to current UTC date');
+  assert(rolledOver.state.dailyTasks.length === 3, 'Fresh tasks generated on date rollover');
+  assert(rolledOver.state.dailyTasks[0].current === 0, 'New tasks start fresh at 0');
+  assert(rolledOver.state.dailyCompletionClaimed === false, 'Completion claim resets on date rollover');
+
+  // 12. Same-Day Load Preserves In-Progress & Claimed Tasks
+  const sameDayTasks = [
+    {
+      id: 'task_merge_items',
+      title: 'Merge Items',
+      description: 'Merge 25 items',
+      target: 25,
+      current: 18,
+      isCompleted: false,
+      isClaimed: false,
+      rewards: { coins: 80, xp: 15 },
+    },
+    {
+      id: 'task_tap_garden',
+      title: 'Harvest Herbs',
+      description: 'Tap 10 times',
+      target: 10,
+      current: 10,
+      isCompleted: true,
+      isClaimed: true,
+      rewards: { coins: 60, xp: 10 },
+    },
+    {
+      id: 'task_fulfill_order',
+      title: 'Fulfill Orders',
+      description: 'Fulfill 2 orders',
+      target: 2,
+      current: 1,
+      isCompleted: false,
+      isClaimed: false,
+      rewards: { coins: 100, xp: 20 },
+    },
+  ];
+  const sameDaySave = JSON.stringify({
+    level: 12,
+    dailyTasksDateKey: '2026-05-15',
+    dailyTasks: sameDayTasks,
+    dailyCompletionClaimed: false,
+  });
+  const loadedSameDay = hydrateAndMigrateSave(null, sameDaySave, testNow);
+  assert(loadedSameDay.state.dailyTasks[0].current === 18, 'Same day load preserves partial task progress (18/25)');
+  assert(loadedSameDay.state.dailyTasks[1].isClaimed === true, 'Same day load preserves claimed status');
+
+  // 13. Offline Energy Recovery on Hydration
+  const fiveHoursAgo = testNow - (5 * 3600 * 1000); // 5 hours ago = 18000s / 120s = 150 energy maxed at 100
+  const offlineEnergySave = JSON.stringify({
+    level: 20,
+    energy: 10,
+    maxEnergy: 100,
+    lastEnergyRechargeAt: fiveHoursAgo,
+  });
+  const offlineResult = hydrateAndMigrateSave(null, offlineEnergySave, testNow);
+  assert(offlineResult.state.energy === 100, 'Offline energy reaches maxEnergy 100');
+  assert(offlineResult.recoveredOfflineEnergy === 90, 'Calculates 90 recovered energy for welcome modal');
+
+  // 14. Retention Systems at Player Level 30 (Cap)
+  const l30RetentionSave = JSON.stringify({
+    level: 30,
+    xp: 50000,
+    dailyRewardCycleDay: 7,
+    lastDailyRewardClaimDate: '2026-05-14',
+    dailyTasksDateKey: '2026-05-15',
+  });
+  const l30Hydrated = hydrateAndMigrateSave(null, l30RetentionSave, testNow);
+  assert(l30Hydrated.state.level === 30, 'Player level remains safely at 30');
+  assert(isDailyRewardClaimable(l30Hydrated.state.lastDailyRewardClaimDate, testNow) === true, 'Daily rewards fully functional at Level 30 cap');
+  assert(l30Hydrated.state.dailyTasks.length === 3, 'Daily tasks fully functional at Level 30 cap');
 }
 
 console.log(`\n========================================`);

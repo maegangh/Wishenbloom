@@ -1,21 +1,23 @@
-import { GameState, BoardItem } from '../types';
+import { GameState, BoardItem, DailyTaskState } from '../types';
 import { INITIAL_ORDERS } from '../data/npcs';
 import { INITIAL_KINGDOM_AREAS } from '../data/kingdom';
 import { INITIAL_QUESTS } from '../data/quests';
 import { LEVEL_PROGRESSION, CURRENT_MAX_PLAYER_LEVEL } from '../data/progression';
+import { getUtcDateKey } from '../data/dailyRewards';
+import { generateDailyTasksForDate } from '../data/dailyTasks';
 import { GRID_ROWS, GRID_COLS } from './boardLogic';
 import { resolveExpiredBubbles } from './bubbleLogic';
 
 export const PRIMARY_STORAGE_KEY = 'wishenbloom_save_v1';
 export const LEGACY_STORAGE_KEY = 'mergevale_save_v1'; // Legacy key for backward compatibility
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 export const ENERGY_RECHARGE_SECONDS = 120; // 1 energy every 2 minutes
 
 /**
  * Creates a brand new starting state with all default fields for Level 1 player.
  * In a fresh game, only the Enchanted Garden (gen_garden_1) is available.
  */
-export function createDefaultInitialState(): GameState {
+export function createDefaultInitialState(now: number = Date.now()): GameState {
   const grid: (BoardItem | null)[][] = Array(GRID_ROWS)
     .fill(null)
     .map(() => Array(GRID_COLS).fill(null));
@@ -35,6 +37,9 @@ export function createDefaultInitialState(): GameState {
   grid[4][4] = { instanceId: 'init_dusty_herb', itemId: 'herb_1', tileState: 'dusty' };
   grid[4][5] = { instanceId: 'init_chest_1', itemId: 'chest_wooden', tileState: 'normal' };
 
+  const inventory: (BoardItem | null)[] = [null, null, null, null, null];
+  const todayKey = getUtcDateKey(now);
+
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION,
     level: 1,
@@ -44,15 +49,22 @@ export function createDefaultInitialState(): GameState {
     gems: 20,
     energy: 100,
     maxEnergy: 100,
-    lastEnergyRechargeAt: Date.now(),
+    lastEnergyRechargeAt: now,
 
     grid,
-    inventory: [null, null, null, null, null],
+    inventory,
     maxInventorySlots: 5,
 
     activeOrders: INITIAL_ORDERS,
     activeQuests: INITIAL_QUESTS,
     kingdomAreas: INITIAL_KINGDOM_AREAS,
+
+    // Daily Retention Systems
+    dailyRewardCycleDay: 1,
+    lastDailyRewardClaimDate: null,
+    dailyTasksDateKey: todayKey,
+    dailyTasks: generateDailyTasksForDate(grid, inventory, 1, todayKey),
+    dailyCompletionClaimed: false,
 
     discoveredItemIds: ['herb_1', 'chest_wooden'],
     claimedDiscoveryRewardIds: [],
@@ -76,7 +88,8 @@ export function createDefaultInitialState(): GameState {
       totalGeneratorsTapped: 0,
       kingdomAreasCompleted: 0,
     },
-    lastSavedAt: Date.now(),
+    lastSavedAt: now,
+    lastSeenAt: now,
   };
 }
 
@@ -87,7 +100,7 @@ export function hydrateAndMigrateSave(
   primaryRaw: string | null,
   legacyRaw: string | null,
   now = Date.now()
-): { state: GameState; isMigratedFromLegacy: boolean } {
+): { state: GameState; isMigratedFromLegacy: boolean; recoveredOfflineEnergy?: number } {
   let rawJson = primaryRaw;
   let isMigratedFromLegacy = false;
 
@@ -159,19 +172,62 @@ export function hydrateAndMigrateSave(
 
     // 4. Currencies & Offline Energy Calculation
     const maxEnergy = typeof parsed.maxEnergy === 'number' ? parsed.maxEnergy : 100;
-    let energy = typeof parsed.energy === 'number' ? parsed.energy : maxEnergy;
+    const initialSavedEnergy = typeof parsed.energy === 'number' ? parsed.energy : maxEnergy;
+    let energy = initialSavedEnergy;
     let lastEnergyRechargeAt = typeof parsed.lastEnergyRechargeAt === 'number' ? parsed.lastEnergyRechargeAt : now;
+    let recoveredOfflineEnergy = 0;
 
     if (lastEnergyRechargeAt && energy < maxEnergy) {
       const elapsedSec = (now - lastEnergyRechargeAt) / 1000;
       const energyToAdd = Math.floor(elapsedSec / ENERGY_RECHARGE_SECONDS);
       if (energyToAdd > 0) {
-        energy = Math.min(maxEnergy, energy + energyToAdd);
+        energy = Math.min(maxEnergy, initialSavedEnergy + energyToAdd);
+        recoveredOfflineEnergy = energy - initialSavedEnergy;
         lastEnergyRechargeAt = now - ((elapsedSec % ENERGY_RECHARGE_SECONDS) * 1000);
       }
     }
 
-    // 5. Kingdom Areas validation
+    // 5. Daily Retention Hydration & Date Boundary Check
+    const todayUtc = getUtcDateKey(now);
+    let dailyRewardCycleDay = 1;
+    if (typeof parsed.dailyRewardCycleDay === 'number' && parsed.dailyRewardCycleDay >= 1 && parsed.dailyRewardCycleDay <= 7) {
+      dailyRewardCycleDay = Math.floor(parsed.dailyRewardCycleDay);
+    }
+
+    const lastDailyRewardClaimDate = typeof parsed.lastDailyRewardClaimDate === 'string'
+      ? parsed.lastDailyRewardClaimDate
+      : null;
+
+    let dailyTasks: DailyTaskState[] = [];
+    let dailyTasksDateKey = todayUtc;
+    let dailyCompletionClaimed = false;
+
+    if (
+      parsed.dailyTasksDateKey === todayUtc &&
+      Array.isArray(parsed.dailyTasks) &&
+      parsed.dailyTasks.length === 3
+    ) {
+      // Preserve current day's ongoing tasks
+      dailyTasks = parsed.dailyTasks.map((t: any, idx: number) => ({
+        id: typeof t.id === 'string' ? t.id : `daily_${todayUtc}_task_${idx + 1}`,
+        templateId: typeof t.templateId === 'string' ? t.templateId : `template_${idx + 1}`,
+        title: typeof t.title === 'string' ? t.title : `Daily Task ${idx + 1}`,
+        description: typeof t.description === 'string' ? t.description : 'Complete task',
+        type: t.type || 'merge',
+        target: typeof t.target === 'number' ? t.target : 10,
+        current: typeof t.current === 'number' ? Math.max(0, t.current) : 0,
+        rewards: t.rewards && typeof t.rewards === 'object' ? t.rewards : { coins: 150, energy: 10 },
+        isCompleted: Boolean(t.isCompleted || (typeof t.current === 'number' && typeof t.target === 'number' && t.current >= t.target)),
+        isClaimed: Boolean(t.isClaimed),
+      }));
+      dailyCompletionClaimed = Boolean(parsed.dailyCompletionClaimed);
+    } else {
+      // New UTC date or uninitialized: generate fresh tasks for today
+      dailyTasks = generateDailyTasksForDate(validatedGrid, validatedInventory, playerLevel, todayUtc);
+      dailyCompletionClaimed = false;
+    }
+
+    // 6. Kingdom Areas validation
     let kingdomAreas = defaultState.kingdomAreas;
     if (Array.isArray(parsed.kingdomAreas) && parsed.kingdomAreas.length > 0) {
       kingdomAreas = defaultState.kingdomAreas.map((defaultArea) => {
@@ -213,6 +269,14 @@ export function hydrateAndMigrateSave(
       activeQuests: Array.isArray(parsed.activeQuests) && parsed.activeQuests.length > 0
         ? parsed.activeQuests
         : INITIAL_QUESTS,
+      
+      // Daily Retention Systems
+      dailyRewardCycleDay,
+      lastDailyRewardClaimDate,
+      dailyTasksDateKey,
+      dailyTasks,
+      dailyCompletionClaimed,
+
       kingdomAreas,
 
       discoveredItemIds: Array.isArray(parsed.discoveredItemIds) ? parsed.discoveredItemIds : defaultState.discoveredItemIds,
@@ -232,9 +296,10 @@ export function hydrateAndMigrateSave(
         ...(parsed.stats || {}),
       },
       lastSavedAt: now,
+      lastSeenAt: now,
     };
 
-    return { state: hydrated, isMigratedFromLegacy };
+    return { state: hydrated, isMigratedFromLegacy, recoveredOfflineEnergy };
   } catch (e) {
     console.error('Save hydration error:', e);
     return { state: createDefaultInitialState(), isMigratedFromLegacy: false };

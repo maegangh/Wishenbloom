@@ -6,6 +6,7 @@ import {
   NPCOrder,
   Quest,
   ItemDef,
+  DailyTaskState,
 } from '../types';
 import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
@@ -18,6 +19,17 @@ import {
   LevelProgressionDef,
   LevelRewards,
 } from '../data/progression';
+import {
+  getUtcDateKey,
+  isDailyRewardClaimable,
+  getNextDailyRewardCycleDay,
+  getDailyRewardForDay,
+  DAILY_REWARDS_CYCLE,
+} from '../data/dailyRewards';
+import {
+  generateDailyTasksForDate,
+  DAILY_COMPLETION_REWARD,
+} from '../data/dailyTasks';
 import { audio } from '../audio/audioManager';
 import {
   GRID_ROWS,
@@ -53,12 +65,18 @@ import {
 } from '../logic/saveMigration';
 
 export function useGameState() {
+  const [offlineEnergyRecovered, setOfflineEnergyRecovered] = useState<number>(0);
+
   const [state, setState] = useState<GameState>(() => {
     try {
       const primary = localStorage.getItem(PRIMARY_STORAGE_KEY);
       const legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
-      const { state: hydrated, isMigratedFromLegacy } = hydrateAndMigrateSave(primary, legacy);
+      const { state: hydrated, isMigratedFromLegacy, recoveredOfflineEnergy } = hydrateAndMigrateSave(primary, legacy);
       
+      if (recoveredOfflineEnergy && recoveredOfflineEnergy > 0) {
+        setOfflineEnergyRecovered(recoveredOfflineEnergy);
+      }
+
       if (isMigratedFromLegacy) {
         // One-time save conversion from legacy to primary key
         localStorage.setItem(PRIMARY_STORAGE_KEY, JSON.stringify(hydrated));
@@ -105,6 +123,7 @@ export function useGameState() {
   // 1-Second Centralized Ticker for:
   // - Real-time energy recharge
   // - Timed bubble countdown and auto-expiration
+  // - UTC date rollover detection for Daily Tasks
   useEffect(() => {
     const ticker = setInterval(() => {
       const now = Date.now();
@@ -130,12 +149,29 @@ export function useGameState() {
         }
       }
 
-      if (gridChanged || energyChanged) {
+      // 3. Check UTC Day boundary for Daily Tasks
+      const todayUtc = getUtcDateKey(now);
+      let tasksChanged = false;
+      let newDailyTasks = current.dailyTasks;
+      let newDailyTasksDateKey = current.dailyTasksDateKey;
+      let newDailyCompletionClaimed = current.dailyCompletionClaimed;
+
+      if (current.dailyTasksDateKey !== todayUtc) {
+        newDailyTasksDateKey = todayUtc;
+        newDailyTasks = generateDailyTasksForDate(current.grid, current.inventory, current.level, todayUtc);
+        newDailyCompletionClaimed = false;
+        tasksChanged = true;
+      }
+
+      if (gridChanged || energyChanged || tasksChanged) {
         setState((prev) => ({
           ...prev,
           grid: gridChanged ? updatedGrid : prev.grid,
           energy: energyChanged ? newEnergy : prev.energy,
           lastEnergyRechargeAt: energyChanged ? newLastEnergyRechargeAt : prev.lastEnergyRechargeAt,
+          dailyTasksDateKey: tasksChanged ? newDailyTasksDateKey : prev.dailyTasksDateKey,
+          dailyTasks: tasksChanged ? newDailyTasks : prev.dailyTasks,
+          dailyCompletionClaimed: tasksChanged ? newDailyCompletionClaimed : prev.dailyCompletionClaimed,
         }));
       }
     }, 1000);
@@ -158,6 +194,40 @@ export function useGameState() {
         return q;
       });
       return { ...prev, activeQuests: updatedQuests };
+    });
+  }, []);
+
+  // Update Daily Task Progress helper
+  const updateDailyTasks = useCallback((type: DailyTaskState['type'], amount = 1) => {
+    setState((prev) => {
+      const todayUtc = getUtcDateKey();
+      const currentTasks = prev.dailyTasksDateKey === todayUtc
+        ? prev.dailyTasks
+        : generateDailyTasksForDate(prev.grid, prev.inventory, prev.level, todayUtc);
+      const completionClaimed = prev.dailyTasksDateKey === todayUtc ? prev.dailyCompletionClaimed : false;
+
+      let hasChanged = false;
+      const updatedTasks = currentTasks.map((task) => {
+        if (task.type === type && !task.isCompleted) {
+          const current = Math.min(task.target, task.current + amount);
+          hasChanged = true;
+          return {
+            ...task,
+            current,
+            isCompleted: current >= task.target,
+          };
+        }
+        return task;
+      });
+
+      if (!hasChanged && prev.dailyTasksDateKey === todayUtc) return prev;
+
+      return {
+        ...prev,
+        dailyTasksDateKey: todayUtc,
+        dailyTasks: updatedTasks,
+        dailyCompletionClaimed: completionClaimed,
+      };
     });
   }, []);
 
@@ -426,7 +496,9 @@ export function useGameState() {
     checkDiscovery(droppedItemId);
     updateQuests('tap_generator', 1);
     updateQuests('spend_energy', generator.energyCost);
-  }, [state.grid, state.energy, checkDiscovery, updateQuests]);
+    updateDailyTasks('tap_generator', 1);
+    updateDailyTasks('spend_energy', generator.energyCost);
+  }, [state.grid, state.energy, checkDiscovery, updateQuests, updateDailyTasks]);
 
   // 2. Upgrade Generator (Coins Economy & Evolution Pathway)
   const upgradeGenerator = useCallback((row: number, col: number) => {
@@ -468,7 +540,8 @@ export function useGameState() {
     });
 
     grantXP(Math.round(cost * 0.4 + 20));
-  }, [state.grid, state.coins, grantXP]);
+    updateDailyTasks('upgrade_generator', 1);
+  }, [state.grid, state.coins, grantXP, updateDailyTasks]);
 
   // 3. Move or Merge Item (with prioritized Dusty Tile Resolution)
   const moveOrMergeItem = useCallback((
@@ -552,6 +625,7 @@ export function useGameState() {
       grantXP(xpGained);
       checkDiscovery(nextItemId);
       updateQuests('merge', 1);
+      updateDailyTasks('merge', 1);
       setSelectedCell(null);
       return;
     }
@@ -567,7 +641,7 @@ export function useGameState() {
     }
 
     setSelectedCell(null);
-  }, [state.grid, grantXP, checkDiscovery, updateQuests]);
+  }, [state.grid, grantXP, checkDiscovery, updateQuests, updateDailyTasks]);
 
   // 4. Sell Item
   const sellItem = useCallback((row: number, col: number) => {
@@ -696,8 +770,9 @@ export function useGameState() {
         return { ...prev, grid: newGrid };
       });
     }
+    updateDailyTasks('pop_bubble', 1);
     setSelectedCell(null);
-  }, [state.grid, state.gems]);
+  }, [state.grid, state.gems, updateDailyTasks]);
 
   // 7. Inventory Storage Tray
   const storeInInventory = useCallback((row: number, col: number) => {
@@ -857,7 +932,11 @@ export function useGameState() {
 
     grantXP(order.rewards.xp);
     updateQuests('fulfill_order', 1);
-  }, [state.activeOrders, state.specialOrder, checkOrderAvailable, grantXP, updateQuests]);
+    updateDailyTasks('fulfill_order', 1);
+    if (isSpecial) {
+      updateDailyTasks('fulfill_special_order', 1);
+    }
+  }, [state.activeOrders, state.specialOrder, checkOrderAvailable, grantXP, updateQuests, updateDailyTasks]);
 
   // 10. Restore Kingdom Stage
   const restoreKingdomStage = useCallback((areaId: string) => {
@@ -993,6 +1072,123 @@ export function useGameState() {
     });
   }, []);
 
+  // 12c. Claim Daily Reward (7-day cycle)
+  const claimDailyReward = useCallback(() => {
+    setState((prev) => {
+      const now = Date.now();
+      const todayUtc = getUtcDateKey(now);
+      if (!isDailyRewardClaimable(prev.lastDailyRewardClaimDate, now)) {
+        return prev;
+      }
+
+      const rewardDef = getDailyRewardForDay(prev.dailyRewardCycleDay);
+      const nextCycleDay = getNextDailyRewardCycleDay(prev.dailyRewardCycleDay);
+
+      audio.playOrderComplete();
+      confetti({ particleCount: 75, spread: 80, origin: { y: 0.4 } });
+
+      const newGrid = prev.grid.map((r) => [...r]);
+      if (rewardDef.rewards.chestItemId) {
+        spawnItemOnFirstEmpty(newGrid, {
+          instanceId: `daily_chest_${Date.now()}`,
+          itemId: rewardDef.rewards.chestItemId,
+          tileState: 'normal',
+        });
+      }
+
+      const coinsToAdd = rewardDef.rewards.coins || 0;
+      const gemsToAdd = rewardDef.rewards.gems || 0;
+      const energyToAdd = rewardDef.rewards.energy || 0;
+
+      return {
+        ...prev,
+        coins: prev.coins + coinsToAdd,
+        gems: prev.gems + gemsToAdd,
+        energy: Math.min(prev.maxEnergy + 100, prev.energy + energyToAdd),
+        grid: newGrid,
+        dailyRewardCycleDay: nextCycleDay,
+        lastDailyRewardClaimDate: todayUtc,
+        stats: {
+          ...prev.stats,
+          totalCoinsEarned: prev.stats.totalCoinsEarned + coinsToAdd,
+          totalGemsEarned: prev.stats.totalGemsEarned + gemsToAdd,
+        },
+      };
+    });
+  }, []);
+
+  // 12d. Claim Individual Daily Task
+  const claimDailyTask = useCallback((taskId: string) => {
+    setState((prev) => {
+      const task = prev.dailyTasks.find((t) => t.id === taskId);
+      if (!task || !task.isCompleted || task.isClaimed) {
+        return prev;
+      }
+
+      audio.playOrderComplete();
+      confetti({ particleCount: 45, spread: 60 });
+
+      const updatedTasks = prev.dailyTasks.map((t) => {
+        if (t.id === taskId) {
+          return { ...t, isClaimed: true };
+        }
+        return t;
+      });
+
+      const coinsToAdd = task.rewards.coins || 0;
+      const gemsToAdd = task.rewards.gems || 0;
+      const energyToAdd = task.rewards.energy || 0;
+
+      return {
+        ...prev,
+        coins: prev.coins + coinsToAdd,
+        gems: prev.gems + gemsToAdd,
+        energy: Math.min(prev.maxEnergy + 50, prev.energy + energyToAdd),
+        dailyTasks: updatedTasks,
+        stats: {
+          ...prev.stats,
+          totalCoinsEarned: prev.stats.totalCoinsEarned + coinsToAdd,
+          totalGemsEarned: prev.stats.totalGemsEarned + gemsToAdd,
+        },
+      };
+    });
+  }, []);
+
+  // 12e. Claim Daily Completion Reward (All 3 tasks complete)
+  const claimDailyCompletionReward = useCallback(() => {
+    setState((prev) => {
+      if (prev.dailyCompletionClaimed) return prev;
+      const allCompleted = prev.dailyTasks.length > 0 && prev.dailyTasks.every((t) => t.isCompleted);
+      if (!allCompleted) return prev;
+
+      audio.playChestOpen();
+      confetti({ particleCount: 90, spread: 90, origin: { y: 0.3 } });
+
+      const newGrid = prev.grid.map((r) => [...r]);
+      if (DAILY_COMPLETION_REWARD.chestItemId) {
+        spawnItemOnFirstEmpty(newGrid, {
+          instanceId: `daily_comp_chest_${Date.now()}`,
+          itemId: DAILY_COMPLETION_REWARD.chestItemId,
+          tileState: 'normal',
+        });
+      }
+
+      return {
+        ...prev,
+        coins: prev.coins + DAILY_COMPLETION_REWARD.coins,
+        gems: prev.gems + DAILY_COMPLETION_REWARD.gems,
+        energy: Math.min(prev.maxEnergy + 50, prev.energy + DAILY_COMPLETION_REWARD.energy),
+        grid: newGrid,
+        dailyCompletionClaimed: true,
+        stats: {
+          ...prev.stats,
+          totalCoinsEarned: prev.stats.totalCoinsEarned + DAILY_COMPLETION_REWARD.coins,
+          totalGemsEarned: prev.stats.totalGemsEarned + DAILY_COMPLETION_REWARD.gems,
+        },
+      };
+    });
+  }, []);
+
   // 13. Dev & Testing Helpers
   const devAddCoins = (amt = 500) => setState((p) => ({ ...p, coins: p.coins + amt }));
   const devAddGems = (amt = 50) => setState((p) => ({ ...p, gems: p.gems + amt }));
@@ -1024,6 +1220,42 @@ export function useGameState() {
     setSelectedCell(null);
   };
 
+  const devSimulateNextDay = () => {
+    setState((prev) => {
+      const fakeTomorrowDate = `SIM_${Date.now()}`;
+      const newTasks = generateDailyTasksForDate(prev.grid, prev.inventory, prev.level, fakeTomorrowDate);
+      return {
+        ...prev,
+        lastDailyRewardClaimDate: null,
+        dailyTasksDateKey: fakeTomorrowDate,
+        dailyTasks: newTasks,
+        dailyCompletionClaimed: false,
+      };
+    });
+  };
+
+  const devResetDailyClaim = () => {
+    setState((prev) => ({
+      ...prev,
+      lastDailyRewardClaimDate: null,
+    }));
+  };
+
+  const devCompleteAllDailyTasks = () => {
+    setState((prev) => ({
+      ...prev,
+      dailyTasks: prev.dailyTasks.map((t) => ({ ...t, current: t.target, isCompleted: true })),
+    }));
+  };
+
+  const devSetDailyRewardDay = (day: number) => {
+    setState((prev) => ({
+      ...prev,
+      dailyRewardCycleDay: Math.max(1, Math.min(7, day)),
+      lastDailyRewardClaimDate: null,
+    }));
+  };
+
   const updateSettings = (newSettings: GameState['settings']) => {
     setState((prev) => ({ ...prev, settings: newSettings }));
   };
@@ -1038,6 +1270,8 @@ export function useGameState() {
     setDiscoveryPopupItem,
     floatingText,
     setFloatingText,
+    offlineEnergyRecovered,
+    setOfflineEnergyRecovered,
     tapGenerator,
     upgradeGenerator,
     moveOrMergeItem,
@@ -1052,6 +1286,9 @@ export function useGameState() {
     claimQuest,
     claimDiscoveryReward,
     claimCompendiumMilestone,
+    claimDailyReward,
+    claimDailyTask,
+    claimDailyCompletionReward,
     advanceTutorial,
     dismissTutorial,
     grantXP,
@@ -1064,5 +1301,9 @@ export function useGameState() {
     devSpawnItem,
     devClearBoard,
     devResetSave,
+    devSimulateNextDay,
+    devResetDailyClaim,
+    devCompleteAllDailyTasks,
+    devSetDailyRewardDay,
   };
 }

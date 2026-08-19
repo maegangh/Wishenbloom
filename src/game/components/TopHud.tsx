@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Wrench, Zap, Sparkles } from 'lucide-react';
+import { Settings, Wrench, Zap, Sparkles, Gift } from 'lucide-react';
 import { GameState } from '../types';
 import { CURRENT_MAX_PLAYER_LEVEL } from '../data/progression';
 import { BALANCE } from '../data/balance';
@@ -9,6 +9,8 @@ interface TopHudProps {
   onOpenSettings: () => void;
   onOpenDev: () => void;
   onOpenEnergyShop?: () => void;
+  onOpenDailyRewards?: () => void;
+  hasUnclaimedDailyReward?: boolean;
 }
 
 export const TopHud: React.FC<TopHudProps> = ({
@@ -16,6 +18,8 @@ export const TopHud: React.FC<TopHudProps> = ({
   onOpenSettings,
   onOpenDev,
   onOpenEnergyShop,
+  onOpenDailyRewards,
+  hasUnclaimedDailyReward,
 }) => {
   const isCapped = state.level >= CURRENT_MAX_PLAYER_LEVEL;
   const xpPercent = isCapped ? 100 : Math.min(100, Math.round((state.xp / state.xpToNextLevel) * 100));
@@ -100,8 +104,22 @@ export const TopHud: React.FC<TopHudProps> = ({
           </button>
         </div>
 
-        {/* Actions (Dev & Settings) */}
+        {/* Actions (Daily Rewards, Dev & Settings) */}
         <div className="flex items-center gap-1">
+          {onOpenDailyRewards && (
+            <button
+              onClick={onOpenDailyRewards}
+              id="btn-daily-rewards"
+              className="relative p-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 transition-all cursor-pointer"
+              title="Daily Gifts"
+            >
+              <Gift className={`w-4 h-4 ${hasUnclaimedDailyReward ? 'animate-bounce text-amber-300' : ''}`} />
+              {hasUnclaimedDailyReward && (
+                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-pink-500 rounded-full ring-2 ring-slate-900 animate-pulse" />
+              )}
+            </button>
+          )}
+
           <button
             onClick={onOpenDev}
             id="btn-dev-tools"

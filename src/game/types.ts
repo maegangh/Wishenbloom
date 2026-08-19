@@ -180,6 +180,37 @@ export interface CompendiumMilestone {
   badgeTitle: string;
 }
 
+export interface DailyRewardDayDef {
+  day: number;
+  title: string;
+  description: string;
+  rewards: {
+    coins?: number;
+    gems?: number;
+    energy?: number;
+    chestItemId?: string;
+  };
+  icon: string;
+}
+
+export interface DailyTaskState {
+  id: string;
+  templateId: string;
+  title: string;
+  description: string;
+  type: 'merge' | 'tap_generator' | 'spend_energy' | 'fulfill_order' | 'fulfill_special_order' | 'pop_bubble' | 'upgrade_generator';
+  target: number;
+  current: number;
+  rewards: {
+    coins: number;
+    xp?: number;
+    gems?: number;
+    energy?: number;
+  };
+  isCompleted: boolean;
+  isClaimed: boolean;
+}
+
 export interface GameState {
   // Currencies & Progression
   level: number;
@@ -201,6 +232,13 @@ export interface GameState {
   specialOrder?: NPCOrder | null;
   activeQuests: Quest[];
   
+  // Daily Retention Systems
+  dailyRewardCycleDay: number; // 1-7
+  lastDailyRewardClaimDate: string | null; // e.g. "2026-08-18" (UTC)
+  dailyTasksDateKey: string; // e.g. "2026-08-18" (UTC)
+  dailyTasks: DailyTaskState[];
+  dailyCompletionClaimed: boolean;
+
   // Kingdom Restoration
   kingdomAreas: KingdomArea[];
 
@@ -220,5 +258,6 @@ export interface GameState {
 
   // Timestamps & Versioning
   lastSavedAt: number;
+  lastSeenAt?: number;
   schemaVersion?: number;
 }

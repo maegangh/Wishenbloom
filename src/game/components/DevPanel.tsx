@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Wrench, Plus, RefreshCw, Zap, Coins, Gem, Sparkles, Trash2, Activity, LayoutGrid, Award, BookOpen } from 'lucide-react';
+import { X, Wrench, Plus, RefreshCw, Zap, Coins, Gem, Sparkles, Trash2, Activity, LayoutGrid, Award, BookOpen, Calendar, Gift, CheckCircle2 } from 'lucide-react';
 import { ITEMS } from '../data/items';
 import { GameState } from '../types';
 import { getLevelProgression, getUnlockedChainsForLevel } from '../data/progression';
@@ -13,6 +13,10 @@ interface DevPanelProps {
   onSpawnItem: (itemId: string) => void;
   onClearBoard: () => void;
   onResetSave: () => void;
+  onSimulateNextDay?: () => void;
+  onResetDailyClaim?: () => void;
+  onCompleteAllDailyTasks?: () => void;
+  onSetDailyRewardDay?: (day: number) => void;
   onClose: () => void;
 }
 
@@ -25,6 +29,10 @@ export const DevPanel: React.FC<DevPanelProps> = ({
   onSpawnItem,
   onClearBoard,
   onResetSave,
+  onSimulateNextDay,
+  onResetDailyClaim,
+  onCompleteAllDailyTasks,
+  onSetDailyRewardDay,
   onClose,
 }) => {
   const [selectedSpawnItem, setSelectedSpawnItem] = useState('herb_3');
@@ -91,24 +99,69 @@ export const DevPanel: React.FC<DevPanelProps> = ({
                 </span>
               </div>
 
-              {/* Generators & Chains */}
+              {/* Retention Daily State */}
               <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
-                <span className="text-[10px] text-slate-400 block font-bold">Generators</span>
-                <span className="text-xs font-black text-purple-300">
-                  {generatorCount} Active ({unlockedChains.length} Chains)
+                <span className="text-[10px] text-slate-400 block font-bold">Daily Gift</span>
+                <span className="text-xs font-black text-amber-300">
+                  Day {gameState.dailyRewardCycleDay || 1}/7 {gameState.lastDailyRewardClaimDate ? '(Claimed)' : '(Ready)'}
                 </span>
               </div>
 
-              {/* Compendium & Discoveries */}
+              {/* Daily Tasks */}
               <div className="p-2 rounded-xl bg-slate-800/80 border border-slate-700/60">
-                <span className="text-[10px] text-slate-400 block font-bold">Discoveries</span>
+                <span className="text-[10px] text-slate-400 block font-bold">Daily Tasks</span>
                 <span className="text-xs font-black text-cyan-300">
-                  {gameState.discoveredItemIds.length}/{Object.keys(ITEMS).length} Items
+                  {gameState.dailyTasks ? `${gameState.dailyTasks.filter((t) => t.isCompleted).length}/3 Done` : '0/3'}
                 </span>
               </div>
             </div>
           </div>
         )}
+
+        {/* Retention & Daily Testing */}
+        <div className="py-3 border-b border-slate-800 space-y-2">
+          <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1">
+            <Calendar className="w-3.5 h-3.5" /> Retention & Daily QA
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {onSimulateNextDay && (
+              <button
+                onClick={onSimulateNextDay}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-amber-300 border border-slate-700 flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Simulate Tomorrow</span>
+              </button>
+            )}
+            {onResetDailyClaim && (
+              <button
+                onClick={onResetDailyClaim}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-yellow-300 border border-slate-700 flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Gift className="w-3.5 h-3.5" />
+                <span>Reset Gift Claim</span>
+              </button>
+            )}
+            {onCompleteAllDailyTasks && (
+              <button
+                onClick={onCompleteAllDailyTasks}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-emerald-300 border border-slate-700 flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Complete 3 Tasks</span>
+              </button>
+            )}
+            {onSetDailyRewardDay && (
+              <button
+                onClick={() => onSetDailyRewardDay(7)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-purple-300 border border-slate-700 flex items-center justify-center gap-1 cursor-pointer"
+              >
+                <Award className="w-3.5 h-3.5" />
+                <span>Set Gift Day 7</span>
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Quick Resource Actions */}
         <div className="py-3 space-y-2">
@@ -203,3 +256,4 @@ export const DevPanel: React.FC<DevPanelProps> = ({
     </div>
   );
 };
+
