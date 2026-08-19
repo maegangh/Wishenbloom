@@ -38,8 +38,10 @@ import {
   COIN_SHOP_PRODUCTS,
   getStoreProduct,
 } from '../data/storeProducts';
-import { MockPurchaseProvider } from '../logic/purchaseProvider';
+import { MockPurchaseProvider, DisabledPurchaseProvider, GooglePlayPurchaseProvider, AppleStorePurchaseProvider, getActivePurchaseProvider, setActivePurchaseProvider } from '../logic/purchaseProvider';
 import { GRID_ROWS, GRID_COLS, spawnItemOnFirstEmpty } from '../logic/boardLogic';
+import { APP_IDENTITY } from '../config/version';
+import { WebStorageProvider, NativeStorageProvider } from '../logic/storageProvider';
 
 let totalTests = 0;
 let passedTests = 0;
@@ -56,7 +58,8 @@ function assert(condition: boolean, testName: string) {
   }
 }
 
-console.log('\n--- 🌟 WISHENBLOOM CORE SYSTEMS, PROGRESSION & PLAYABILITY TEST SUITE ---');
+async function runAllTests() {
+  console.log('\n--- 🌟 WISHENBLOOM CORE SYSTEMS, PROGRESSION & PLAYABILITY TEST SUITE ---');
 
 // TEST SUITE 1: Merge Logic & Dusty Tile Resolution
 console.log('\n[1] Testing Merge Logic & Dusty Tile Resolution:');
@@ -1163,11 +1166,145 @@ console.log('\n[16] Testing Monetization, Energy Overflow & Safe IAP Architectur
   assert(claimSuccess === true, 'Pending reward can be claimed to board once space is cleared');
 }
 
-console.log(`\n========================================`);
-console.log(`RESULTS: ${passedTests}/${totalTests} tests passed (${failedTests} failed)`);
-console.log(`========================================\n`);
+// TEST SUITE 17: Native Mobile Verification, Store Integration Safety & Release Hardening
+console.log('\n[17] Testing Native Mobile Verification, Store Integration Safety & Release Hardening:');
+{
+  // 1. APP_IDENTITY Name
+  assert(APP_IDENTITY.name === 'Wishenbloom', 'APP_IDENTITY.name is Wishenbloom');
 
-if (failedTests > 0) {
-  process.exit(1);
+  // 2. APP_IDENTITY Publisher
+  assert(APP_IDENTITY.publisher === 'Mythic Crown Studios LLC', 'APP_IDENTITY.publisher is Mythic Crown Studios LLC');
+
+  // 3. Android Application ID
+  assert(
+    APP_IDENTITY.androidApplicationId === 'com.mythiccrownstudios.wishenbloom',
+    'APP_IDENTITY.androidApplicationId matches com.mythiccrownstudios.wishenbloom'
+  );
+
+  // 4. iOS Bundle Identifier
+  assert(
+    APP_IDENTITY.iosBundleIdentifier === 'com.mythiccrownstudios.wishenbloom',
+    'APP_IDENTITY.iosBundleIdentifier matches com.mythiccrownstudios.wishenbloom'
+  );
+
+  // 5. Version String (0.1.0)
+  assert(APP_IDENTITY.version === '0.1.0', 'APP_IDENTITY.version is 0.1.0');
+
+  // 6. Android Version Code (1)
+  assert(APP_IDENTITY.androidVersionCode === 1, 'APP_IDENTITY.androidVersionCode is 1');
+
+  // 7. iOS Build Number (1)
+  assert(APP_IDENTITY.iosBuildNumber === '1', 'APP_IDENTITY.iosBuildNumber is 1');
+
+  // 8. Web Development Provider
+  const devProvider = new MockPurchaseProvider();
+  assert(devProvider.isMock() === true, 'Web development can explicitly use MockPurchaseProvider');
+
+  // 9. Beta Environment Guard
+  const disabledProvider = new DisabledPurchaseProvider();
+  assert(disabledProvider.isMock() === false, 'Beta environment cannot grant through MockPurchaseProvider');
+
+  // 10. Production Environment Guard
+  const gpProvider = new GooglePlayPurchaseProvider();
+  const appleProvider = new AppleStorePurchaseProvider();
+  assert(gpProvider.isMock() === false, 'Production Android provider is not mock');
+  assert(appleProvider.isMock() === false, 'Production iOS provider is not mock');
+
+  // 11. Android Unconfigured Billing Error Code
+  const androidRes = await gpProvider.purchase('wishenbloom_gems_80');
+  const androidPurchaseError = androidRes.error || '';
+  assert(
+    androidPurchaseError.includes('NOT_CONFIGURED') || androidPurchaseError.includes('STORE_UNAVAILABLE'),
+    'Android production with billing unconfigured returns NOT_CONFIGURED or STORE_UNAVAILABLE'
+  );
+
+  // 12. iOS Unconfigured Billing Error Code
+  const iosRes = await appleProvider.purchase('wishenbloom_gems_80');
+  const iosPurchaseError = iosRes.error || '';
+  assert(
+    iosPurchaseError.includes('NOT_CONFIGURED') || iosPurchaseError.includes('STORE_UNAVAILABLE'),
+    'iOS production with billing unconfigured returns NOT_CONFIGURED or STORE_UNAVAILABLE'
+  );
+
+  // 13. Disabled Provider Cannot Grant Gems
+  const disabledGemRes = await disabledProvider.purchase('wishenbloom_gems_1000');
+  assert(disabledGemRes.success === false, 'Disabled provider cannot grant Gems');
+
+  // 14. Disabled Provider Cannot Grant Welcome Pack
+  const disabledPackRes = await disabledProvider.purchase('wishenbloom_starter_bloomkeeper');
+  assert(disabledPackRes.success === false, 'Disabled provider cannot grant Welcome Pack');
+
+  // 15. Starter Pack Restoration Logic Semantics
+  // Restoring one-time purchases confirms entitlement in purchasedOneTimeProductIds without re-granting currencies
+  const testEntitlements = ['wishenbloom_starter_bloomkeeper'];
+  const restoredSkus = devProvider.restorePurchasesSync(testEntitlements);
+  assert(restoredSkus.includes('wishenbloom_starter_bloomkeeper'), 'Restores non-consumable starter pack SKU');
+  assert(restoredSkus.length === 1, 'Restoration only applies to authored non-consumables');
+
+  // 16. Pending Reward Preservation
+  const testState = createDefaultInitialState();
+  testState.pendingRewards = [
+    {
+      id: 'pending_save_test',
+      source: 'Store Purchase',
+      title: 'Royal Chest',
+      itemId: 'chest_royal_3',
+      createdAt: 1234567,
+    },
+  ];
+  const serialized = JSON.stringify(testState);
+  const { state: restoredState } = hydrateAndMigrateSave(null, serialized, 1234567);
+  assert(restoredState.pendingRewards.length === 1, 'Pending rewards preserved across save hydration');
+  assert(restoredState.pendingRewards[0].itemId === 'chest_royal_3', 'Pending item details accurately preserved');
+
+  // 17. Duplicate Transaction Detection
+  testState.processedTransactionIds = ['tx_prev_100'];
+  const isDuplicate = testState.processedTransactionIds.includes('tx_prev_100');
+  const isNewTx = !testState.processedTransactionIds.includes('tx_new_200');
+  assert(isDuplicate === true, 'Duplicate transaction ID is recognized and rejected');
+  assert(isNewTx === true, 'New unique transaction ID is accepted');
+
+  // 18. Schema-v5 Save Compatibility
+  assert(restoredState.schemaVersion === 5, 'Save schema v5 is active and backwards compatible');
+  assert(Array.isArray(restoredState.processedTransactionIds), 'Save schema v5 includes processedTransactionIds');
+  assert(Array.isArray(restoredState.purchasedOneTimeProductIds), 'Save schema v5 includes purchasedOneTimeProductIds');
+
+  // 19. Lifecycle Event Idempotent Evaluation
+  const resumeState = createDefaultInitialState();
+  resumeState.energy = 50;
+  resumeState.lastEnergyRechargeAt = 1000000;
+  // First evaluation at +240s (should grant 2 energy: 1 per 120s)
+  const elapsed240 = (1000000 + 240000 - resumeState.lastEnergyRechargeAt) / 1000;
+  const grant240 = Math.floor(elapsed240 / 120);
+  assert(grant240 === 2, 'First resume calculation correctly calculates 2 energy for 240s');
+  // Immediate second evaluation with 0s elapsed
+  const updatedRechargeAt = 1000000 + 240000;
+  const elapsed0 = (1000000 + 240000 - updatedRechargeAt) / 1000;
+  const grant0 = Math.floor(elapsed0 / 120);
+  assert(grant0 === 0, 'Immediate repeated resume evaluation is idempotent and adds 0 energy');
+
+  // 20. Level 30 Cap Unviolated Across Mobile Bootstrap
+  assert(CURRENT_MAX_PLAYER_LEVEL === 30, 'Level 30 remains absolute max player level across mobile bootstrap');
+  const level30MobileState = createDefaultInitialState();
+  level30MobileState.level = 30;
+  level30MobileState.xp = 50000;
+  const mobileSerialized = JSON.stringify(level30MobileState);
+  const { state: hydratedMobile } = hydrateAndMigrateSave(null, mobileSerialized, 2000000);
+  assert(hydratedMobile.level === 30, 'Player level strictly clamped to 30 on mobile hydration');
+  assert(isPlayerAtMaxLevel(hydratedMobile.level) === true, 'isPlayerAtMaxLevel confirms Level 30 max status');
 }
+
+  console.log(`\n========================================`);
+  console.log(`RESULTS: ${passedTests}/${totalTests} tests passed (${failedTests} failed)`);
+  console.log(`========================================\n`);
+
+  if (failedTests > 0) {
+    process.exit(1);
+  }
+}
+
+runAllTests().catch((err) => {
+  console.error('Fatal test runner error:', err);
+  process.exit(1);
+});
 

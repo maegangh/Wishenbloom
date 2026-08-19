@@ -121,7 +121,7 @@ export class DisabledPurchaseProvider implements PurchaseProvider {
     return {
       success: false,
       sku: productIdOrSku,
-      error: 'Store billing is currently undergoing maintenance. In-app purchases are temporarily unavailable in this build.',
+      error: 'STORE_UNAVAILABLE: Store billing is unavailable in this build.',
       isMockTransaction: false,
     };
   }
@@ -153,7 +153,7 @@ export class GooglePlayPurchaseProvider implements PurchaseProvider {
     return {
       success: false,
       sku: productIdOrSku,
-      error: 'Google Play Billing is not configured in this build.',
+      error: 'NOT_CONFIGURED: Google Play Billing is not configured in this build.',
       isMockTransaction: false,
     };
   }
@@ -185,7 +185,7 @@ export class AppleStorePurchaseProvider implements PurchaseProvider {
     return {
       success: false,
       sku: productIdOrSku,
-      error: 'Apple StoreKit is not configured in this build.',
+      error: 'NOT_CONFIGURED: Apple StoreKit is not configured in this build.',
       isMockTransaction: false,
     };
   }
@@ -209,7 +209,7 @@ let customPurchaseProvider: PurchaseProvider | null = null;
 
 /**
  * Resolves the appropriate purchase provider based on environment and platform.
- * Ensures production builds NEVER silently fall back to mock purchases.
+ * Ensures beta and production builds NEVER silently fall back to mock purchases.
  */
 export function getActivePurchaseProvider(): PurchaseProvider {
   if (customPurchaseProvider) {
@@ -219,14 +219,14 @@ export function getActivePurchaseProvider(): PurchaseProvider {
   const env = getAppEnvironment();
   const platform = getPlatformType();
 
-  // In production builds:
-  if (env === 'production') {
+  // In Beta and Production builds: Mock purchases are STRICTLY FORBIDDEN
+  if (env === 'production' || env === 'beta') {
     if (platform === 'android') return googlePlayPurchaseProvider;
     if (platform === 'ios') return appleStorePurchaseProvider;
     return disabledPurchaseProvider;
   }
 
-  // In development and beta:
+  // Explicit Development mode (Web or Dev Native):
   return mockPurchaseProvider;
 }
 

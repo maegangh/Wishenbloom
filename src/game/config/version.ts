@@ -3,9 +3,12 @@
  */
 
 export const APP_IDENTITY = {
+  name: 'Wishenbloom',
   appName: 'Wishenbloom',
   publisher: 'Mythic Crown Studios LLC',
   appId: 'com.mythiccrownstudios.wishenbloom',
+  androidApplicationId: 'com.mythiccrownstudios.wishenbloom',
+  iosBundleIdentifier: 'com.mythiccrownstudios.wishenbloom',
   version: '0.1.0',
   androidVersionCode: 1,
   iosBuildNumber: '1',
