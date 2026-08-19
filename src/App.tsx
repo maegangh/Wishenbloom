@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useGameState } from './game/state/useGameState';
 import { TopHud } from './game/components/TopHud';
 import { OrderBar } from './game/components/OrderBar';
+import { FeatureShortcuts } from './game/components/FeatureShortcuts';
 import { BoardGrid } from './game/components/BoardGrid';
 import { InventoryBar } from './game/components/InventoryBar';
+import { SelectedItemPanel } from './game/components/SelectedItemPanel';
 import { ItemDetailDrawer } from './game/components/ItemDetailDrawer';
 import { KingdomView } from './game/components/KingdomView';
 import { CollectionBook } from './game/components/CollectionBook';
@@ -175,9 +177,20 @@ export default function App() {
   return (
     <div className="flex justify-center items-center w-screen h-screen bg-slate-950 overflow-hidden font-sans text-slate-100">
       {/* Mobile Frame Container (Portrait 390px - 440px responsive) */}
-      <div className="relative w-full h-full max-w-md bg-slate-900 flex flex-col justify-between overflow-hidden shadow-2xl border-x border-slate-800">
+      <div className="relative w-full h-full max-w-md bg-gradient-to-b from-[#1a2e40] via-[#0f2334] to-[#0c1926] flex flex-col justify-between overflow-hidden shadow-2xl border-x border-slate-800">
         
-        {/* Top HUD (Level, XP, Coins, Gems, Energy, Controls) */}
+        {/* Fantasy Garden Background Layers */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-40">
+          {/* Top Sunbeam Glow */}
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-amber-400/20 rounded-full blur-3xl" />
+          {/* Ambient Magical Pollen Particles */}
+          <div className="absolute top-1/4 left-8 w-2 h-2 bg-yellow-300 rounded-full blur-[1px] animate-[gentleFloat_4s_ease-in-out_infinite]" />
+          <div className="absolute top-1/3 right-12 w-2.5 h-2.5 bg-emerald-300 rounded-full blur-[1px] animate-[gentleFloat_5s_ease-in-out_infinite_1s]" />
+          <div className="absolute top-2/3 left-16 w-1.5 h-1.5 bg-amber-200 rounded-full blur-[1px] animate-[gentleFloat_6s_ease-in-out_infinite_2s]" />
+          <div className="absolute top-3/4 right-8 w-2 h-2 bg-cyan-300 rounded-full blur-[1px] animate-[gentleFloat_4.5s_ease-in-out_infinite_1.5s]" />
+        </div>
+
+        {/* Top HUD (Heroine Portrait, Level Badge, Resource Capsules, Controls) */}
         <TopHud
           state={state}
           onOpenSettings={() => setShowSettings(true)}
@@ -189,10 +202,10 @@ export default function App() {
         />
 
         {/* Main Content Area Based on Active Tab */}
-        <main className="flex-1 w-full overflow-hidden flex flex-col relative">
+        <main className="flex-1 w-full overflow-hidden flex flex-col relative z-10">
           {activeTab === 'board' && (
             <div className="w-full h-full flex flex-col justify-between py-1 overflow-hidden">
-              {/* Active Orders Horizontal Bar */}
+              {/* Active NPC Orders (Side-by-side 2-Card Layout) */}
               <OrderBar
                 orders={[
                   ...(state.specialOrder ? [state.specialOrder] : []),
@@ -202,8 +215,20 @@ export default function App() {
                 onFulfillOrder={fulfillOrder}
               />
 
+              {/* 5 Feature Shortcut Buttons (Gifts, Tasks, Tome, Realm, Boost) */}
+              <FeatureShortcuts
+                onOpenDailyRewards={() => setShowDailyRewards(true)}
+                onOpenQuests={() => setActiveTab('quests')}
+                onOpenCompendium={() => setActiveTab('compendium')}
+                onOpenKingdom={() => setActiveTab('kingdom')}
+                onOpenShop={() => setShowShop(true)}
+                hasUnclaimedDailyReward={hasUnclaimedDailyReward}
+                hasUnclaimedQuests={hasUnclaimedQuests}
+                hasUnclaimedDiscoveries={hasUnclaimedDiscoveries}
+              />
+
               {/* 7x9 Interactive Merge Board Grid */}
-              <div className="flex-1 flex items-center justify-center min-h-0 py-1">
+              <div className="flex-1 flex items-center justify-center min-h-0 py-0.5">
                 <BoardGrid
                   grid={state.grid}
                   selectedCell={selectedCell}
@@ -215,13 +240,28 @@ export default function App() {
                 />
               </div>
 
-              {/* Bottom 5-Slot Storage Tray */}
-              <InventoryBar
-                inventory={state.inventory}
-                maxSlots={state.maxInventorySlots}
-                onSelectSlot={(idx) => setSelectedCell({ row: -1, col: -1, fromInventory: true, inventoryIndex: idx })}
-                onRetrieveItem={retrieveFromInventory}
-              />
+              {/* Selected Item Panel (Warm Parchment Card) OR Bottom Storage Tray */}
+              {selectedCell ? (
+                <SelectedItemPanel
+                  selectedCell={selectedCell}
+                  grid={state.grid}
+                  inventory={state.inventory}
+                  playerCoins={state.coins}
+                  onClose={() => setSelectedCell(null)}
+                  onSellItem={sellItem}
+                  onUseConsumable={useConsumable}
+                  onStoreInInventory={storeInInventory}
+                  onPopBubble={popBubble}
+                  onUpgradeGenerator={upgradeGenerator}
+                />
+              ) : (
+                <InventoryBar
+                  inventory={state.inventory}
+                  maxSlots={state.maxInventorySlots}
+                  onSelectSlot={(idx) => setSelectedCell({ row: -1, col: -1, fromInventory: true, inventoryIndex: idx })}
+                  onRetrieveItem={retrieveFromInventory}
+                />
+              )}
             </div>
           )}
 
@@ -255,22 +295,6 @@ export default function App() {
             />
           )}
         </main>
-
-        {/* Selected Item Detail Drawer */}
-        {selectedCell && (
-          <ItemDetailDrawer
-            selectedCell={selectedCell}
-            grid={state.grid}
-            inventory={state.inventory}
-            playerCoins={state.coins}
-            onClose={() => setSelectedCell(null)}
-            onSellItem={sellItem}
-            onUseConsumable={useConsumable}
-            onStoreInInventory={storeInInventory}
-            onPopBubble={popBubble}
-            onUpgradeGenerator={upgradeGenerator}
-          />
-        )}
 
         {/* Persistent Bottom Navigation */}
         <BottomNav
@@ -381,3 +405,4 @@ export default function App() {
     </div>
   );
 }
+

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Lock, Timer } from 'lucide-react';
+import { Lock, Timer, Sparkles } from 'lucide-react';
 import { BoardItem } from '../types';
-import { ITEMS } from '../data/items';
 import { ItemIcon } from './ItemIcon';
 import { checkMergeValidity } from '../logic/mergeLogic';
 import { getBubbleRemainingSeconds } from '../logic/bubbleLogic';
@@ -35,7 +34,6 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
   onTapGenerator,
   onMoveOrMerge,
   onPopBubble,
-  onUseConsumable,
 }) => {
   const boardRef = useRef<HTMLDivElement>(null);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -71,7 +69,7 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
     return null;
   }, []);
 
-  // Pointer Down (Mouse / Touch / Stylus)
+  // Pointer Down
   const handlePointerDown = (e: React.PointerEvent, row: number, col: number) => {
     const item = grid[row]?.[col];
     if (!item) {
@@ -79,13 +77,11 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
       return;
     }
 
-    // If it's a bubble item, tap to select or view
     if (item.tileState === 'bubble') {
       onSelectCell({ row, col });
       return;
     }
 
-    // Start drag tracking
     const initialDrag: DragState = {
       isDragging: false,
       fromRow: row,
@@ -130,10 +126,8 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
     const targetCell = getCellFromPointer(e.clientX, e.clientY);
 
     if (isDragging && targetCell) {
-      // Execute move or merge
       onMoveOrMerge(fromRow, fromCol, targetCell.row, targetCell.col);
     } else {
-      // It was a tap!
       if (item.isGenerator) {
         onTapGenerator(fromRow, fromCol);
       } else {
@@ -145,113 +139,142 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto aspect-[7/9] p-2 select-none touch-none">
-      {/* Board Container */}
+    <div className="relative w-full max-w-md mx-auto aspect-[7/9] p-1.5 select-none touch-none">
+      {/* Fantasy Golden Wood Outer Frame */}
       <div
-        ref={boardRef}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={() => setDragState(null)}
-        className="w-full h-full bg-slate-950/90 rounded-2xl border-2 border-amber-600/30 p-1.5 grid grid-cols-7 grid-rows-9 gap-1 shadow-2xl relative overflow-hidden backdrop-blur-md"
+        className="w-full h-full p-2 rounded-3xl relative overflow-hidden shadow-2xl"
         style={{
-          boxShadow: 'inset 0 0 30px rgba(0,0,0,0.8), 0 10px 25px -5px rgba(0,0,0,0.6)',
+          background: 'linear-gradient(145deg, #7c4d23 0%, #4a2810 50%, #2b1405 100%)',
+          boxShadow: '0 15px 35px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,225,150,0.4), inset 0 -3px 6px rgba(0,0,0,0.8)',
+          border: '2px solid #ca8a04',
         }}
       >
-        {/* Cell Grid Rendering */}
-        {grid.map((row, rIdx) =>
-          row.map((cell, cIdx) => {
-            const isSelected =
-              selectedCell && selectedCell.row === rIdx && selectedCell.col === cIdx;
-            const isDragSource =
-              dragState?.isDragging &&
-              dragState.fromRow === rIdx &&
-              dragState.fromCol === cIdx;
-            const isHoverTarget =
-              dragState?.isDragging &&
-              dragState.hoverRow === rIdx &&
-              dragState.hoverCol === cIdx &&
-              (dragState.fromRow !== rIdx || dragState.fromCol !== cIdx);
+        {/* Inner Board Parchment Grid Container */}
+        <div
+          ref={boardRef}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={() => setDragState(null)}
+          className="w-full h-full rounded-2xl p-1 grid grid-cols-7 grid-rows-9 gap-1 shadow-inner relative overflow-hidden"
+          style={{
+            backgroundColor: '#e6d7b8',
+            boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.35)',
+          }}
+        >
+          {/* Cell Grid Rendering */}
+          {grid.map((row, rIdx) =>
+            row.map((cell, cIdx) => {
+              const isSelected =
+                selectedCell &&
+                !selectedCell.fromInventory &&
+                selectedCell.row === rIdx &&
+                selectedCell.col === cIdx;
+              const isDragSource =
+                dragState?.isDragging &&
+                dragState.fromRow === rIdx &&
+                dragState.fromCol === cIdx;
+              const isHoverTarget =
+                dragState?.isDragging &&
+                dragState.hoverRow === rIdx &&
+                dragState.hoverCol === cIdx &&
+                (dragState.fromRow !== rIdx || dragState.fromCol !== cIdx);
 
-            // Calculate if hover is a valid merge using unified merge validity check
-            let isMergeHover = false;
-            if (isHoverTarget && cell && dragState?.item) {
-              const mergeCheck = checkMergeValidity(dragState.item, cell);
-              if (mergeCheck.canMerge) {
-                isMergeHover = true;
+              let isMergeHover = false;
+              if (isHoverTarget && cell && dragState?.item) {
+                const mergeCheck = checkMergeValidity(dragState.item, cell);
+                if (mergeCheck.canMerge) {
+                  isMergeHover = true;
+                }
               }
-            }
 
-            const bubbleSeconds = cell?.tileState === 'bubble' ? getBubbleRemainingSeconds(cell) : 0;
-            const cooldownSeconds = cell?.isGenerator ? getGeneratorCooldownRemaining(cell) : 0;
+              const bubbleSeconds = cell?.tileState === 'bubble' ? getBubbleRemainingSeconds(cell) : 0;
+              const cooldownSeconds = cell?.isGenerator ? getGeneratorCooldownRemaining(cell) : 0;
 
-            return (
-              <div
-                key={`${rIdx}-${cIdx}`}
-                onPointerDown={(e) => handlePointerDown(e, rIdx, cIdx)}
-                className={`relative w-full h-full rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                  (rIdx + cIdx) % 2 === 0 ? 'bg-slate-900/60' : 'bg-slate-800/40'
-                } border ${
-                  isSelected
-                    ? 'border-amber-400 bg-amber-950/40 shadow-inner'
-                    : isMergeHover
-                    ? 'border-emerald-400 bg-emerald-950/60 scale-105 shadow-lg shadow-emerald-500/30 z-10'
-                    : isHoverTarget
-                    ? 'border-cyan-400 bg-cyan-950/50 scale-102 z-10'
-                    : 'border-slate-800/80 hover:border-slate-700'
-                }`}
-              >
-                {/* Cell Item Content */}
-                {cell && !isDragSource && (
-                  <div className="relative w-full h-full flex items-center justify-center p-1">
-                    <ItemIcon
-                      itemId={cell.itemId}
-                      isGenerator={cell.isGenerator}
-                      generatorId={cell.generatorId}
-                      size="88%"
-                    />
-
-                    {/* Generator Cooldown Indicator */}
-                    {cell.isGenerator && cooldownSeconds > 0 && (
-                      <div className="absolute inset-0 bg-slate-950/70 rounded-xl flex flex-col items-center justify-center border border-amber-600/40">
-                        <Timer className="w-3.5 h-3.5 text-amber-300 animate-spin" />
-                        <span className="text-[9px] font-black text-amber-200">{cooldownSeconds}s</span>
+              return (
+                <div
+                  key={`${rIdx}-${cIdx}`}
+                  onPointerDown={(e) => handlePointerDown(e, rIdx, cIdx)}
+                  className={`relative w-full h-full rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                    (rIdx + cIdx) % 2 === 0
+                      ? 'bg-[#fcf7ee] shadow-[inset_0_1px_2px_rgba(255,255,255,0.9)]'
+                      : 'bg-[#f3e7cb] shadow-[inset_0_1px_2px_rgba(255,255,255,0.6)]'
+                  } border ${
+                    isSelected
+                      ? 'border-cyan-400 bg-cyan-50/90 shadow-md ring-2 ring-cyan-400/80 z-10'
+                      : isMergeHover
+                      ? 'border-emerald-500 bg-emerald-100 scale-105 shadow-lg ring-2 ring-emerald-400 z-20'
+                      : isHoverTarget
+                      ? 'border-amber-500 bg-amber-100 scale-102 z-10'
+                      : 'border-[#d4c39e] hover:border-amber-400/80'
+                  }`}
+                >
+                  {/* Cyan Corner Brackets when Selected */}
+                  {isSelected && (
+                    <div className="absolute inset-0 pointer-events-none p-0.5 flex flex-col justify-between z-20">
+                      <div className="flex justify-between w-full">
+                        <div className="w-2 h-2 border-t-2 border-l-2 border-cyan-500 rounded-tl-sm" />
+                        <div className="w-2 h-2 border-t-2 border-r-2 border-cyan-500 rounded-tr-sm" />
                       </div>
-                    )}
-
-                    {/* Dusty / Cobweb Overlay */}
-                    {cell.tileState === 'dusty' && (
-                      <div className="absolute inset-0 bg-slate-950/60 rounded-xl flex flex-col items-center justify-center border border-amber-700/50">
-                        <span className="text-xs">🕸️</span>
-                        <span className="text-[8px] font-black text-amber-200">DUSTY</span>
+                      <div className="flex justify-between w-full">
+                        <div className="w-2 h-2 border-b-2 border-l-2 border-cyan-500 rounded-bl-sm" />
+                        <div className="w-2 h-2 border-b-2 border-r-2 border-cyan-500 rounded-br-sm" />
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Bubble Overlay with Dynamic Timer */}
-                    {cell.tileState === 'bubble' && (
-                      <div className="absolute inset-0 rounded-xl bg-purple-500/20 border-2 border-purple-400/80 animate-pulse flex flex-col items-center justify-center shadow-lg shadow-purple-500/30 backdrop-blur-[1px]">
-                        <span className="text-[9px] font-black text-purple-200 bg-purple-950/85 px-1 rounded-full border border-purple-400/50">
-                          💎 {cell.bubblePrice || 2}
-                        </span>
-                        {bubbleSeconds > 0 && (
-                          <span className="text-[8px] font-bold text-amber-300 bg-slate-950/80 px-1 rounded-full mt-0.5">
-                            {bubbleSeconds}s
+                  {/* Cell Item Content */}
+                  {cell && !isDragSource && (
+                    <div className="relative w-full h-full flex items-center justify-center p-0.5">
+                      <ItemIcon
+                        itemId={cell.itemId}
+                        isGenerator={cell.isGenerator}
+                        generatorId={cell.generatorId}
+                        size="86%"
+                      />
+
+                      {/* Generator Cooldown Indicator */}
+                      {cell.isGenerator && cooldownSeconds > 0 && (
+                        <div className="absolute inset-0 bg-slate-950/70 rounded-xl flex flex-col items-center justify-center border border-amber-600/40 z-20">
+                          <Timer className="w-3.5 h-3.5 text-amber-300 animate-spin" />
+                          <span className="text-[9px] font-black text-amber-200">{cooldownSeconds}s</span>
+                        </div>
+                      )}
+
+                      {/* Dusty / Cobweb Overlay */}
+                      {cell.tileState === 'dusty' && (
+                        <div className="absolute inset-0 bg-stone-900/60 rounded-xl flex flex-col items-center justify-center border border-amber-700/50 z-20">
+                          <span className="text-xs">🕸️</span>
+                          <span className="text-[8px] font-black text-amber-200">DUSTY</span>
+                        </div>
+                      )}
+
+                      {/* Bubble Overlay with Dynamic Timer */}
+                      {cell.tileState === 'bubble' && (
+                        <div className="absolute inset-0 rounded-xl bg-purple-500/25 border-2 border-purple-400 animate-pulse flex flex-col items-center justify-center shadow-lg backdrop-blur-[0.5px] z-20">
+                          <span className="text-[9px] font-black text-purple-100 bg-purple-950/90 px-1 rounded-full border border-purple-300">
+                            💎 {cell.bubblePrice || 2}
                           </span>
-                        )}
-                      </div>
-                    )}
+                          {bubbleSeconds > 0 && (
+                            <span className="text-[8px] font-bold text-amber-300 bg-slate-950/80 px-1 rounded-full mt-0.5">
+                              {bubbleSeconds}s
+                            </span>
+                          )}
+                        </div>
+                      )}
 
-                    {/* Locked Tile Overlay */}
-                    {cell.tileState === 'locked' && (
-                      <div className="absolute inset-0 bg-slate-950/75 rounded-xl flex items-center justify-center">
-                        <Lock className="w-4 h-4 text-amber-400" />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
+                      {/* Locked Tile Overlay */}
+                      {cell.tileState === 'locked' && (
+                        <div className="absolute inset-0 bg-stone-900/75 rounded-xl flex items-center justify-center z-20">
+                          <Lock className="w-4 h-4 text-amber-400" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Floating Drag Ghost (Follows Pointer) */}
@@ -263,7 +286,7 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
             top: `${dragState.currentY}px`,
           }}
         >
-          <div className="w-14 h-14 bg-slate-900/90 rounded-2xl border-2 border-amber-400 p-1 flex items-center justify-center shadow-2xl backdrop-blur-sm">
+          <div className="w-14 h-14 bg-amber-50/95 rounded-2xl border-2 border-amber-500 p-1 flex items-center justify-center shadow-2xl backdrop-blur-sm">
             <ItemIcon
               itemId={dragState.item.itemId}
               isGenerator={dragState.item.isGenerator}
@@ -276,3 +299,4 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
     </div>
   );
 };
+
