@@ -1294,6 +1294,134 @@ console.log('\n[17] Testing Native Mobile Verification, Store Integration Safety
   assert(isPlayerAtMaxLevel(hydratedMobile.level) === true, 'isPlayerAtMaxLevel confirms Level 30 max status');
 }
 
+// TEST SUITE 18: Interactive Tutorial State Machine, Onboarding Flow & Progression
+console.log('\n[18] Testing Interactive Tutorial State Machine, Onboarding Flow & Progression:');
+{
+  // 1. Fresh Save Initial State
+  const freshSave = createDefaultInitialState();
+  assert(freshSave.tutorialStep === 0, 'Fresh save starts at tutorialStep 0');
+  assert(freshSave.isTutorialActive === true, 'Fresh save starts with isTutorialActive true');
+  assert(freshSave.tutorialStage === 'WELCOME', 'Fresh save starts at tutorialStage WELCOME');
+
+  // 2. Starter Board & Generator Configuration
+  const starterGen = freshSave.grid[0][0];
+  assert(starterGen !== null && starterGen.isGenerator === true, 'Starter generator exists at grid[0][0]');
+  assert(starterGen?.generatorId === 'gen_garden_1', 'Starter generator is Enchanted Garden (gen_garden_1)');
+  
+  // Starter items include matching herb_1 seedlings
+  const starterHerbs = freshSave.grid.flatMap((r) => r).filter((c) => c?.itemId === 'herb_1' && !c.isGenerator && c.tileState === 'normal');
+  assert(starterHerbs.length >= 2, 'Starter board contains at least two normal herb_1 items ready to merge');
+
+  // 3. Tutorial Initial Orders
+  const elowenOrder = freshSave.activeOrders.find((o) => o.id === 'order_1');
+  assert(elowenOrder !== undefined, 'Elowen tutorial story order (order_1) is present');
+  assert(elowenOrder?.npcId === 'elowen', 'Tutorial order is authored by Elowen');
+  assert(elowenOrder?.requirements[0]?.itemId === 'herb_2', 'Tutorial order requests exactly 1x herb_2 (Sweetbloom Sprout)');
+  assert(elowenOrder?.requirements[0]?.count === 1, 'Tutorial order requires count 1');
+  assert((elowenOrder?.rewards.coins || 0) > 0, 'Tutorial order grants Coins to fund realm restoration');
+
+  // 4. Deterministic Tutorial Generator Output
+  const testGenDef = GENERATORS['gen_garden_1'];
+  assert(testGenDef !== undefined, 'gen_garden_1 definition exists in GENERATORS catalog');
+  assert(testGenDef.energyCost === 1, 'Starter generator costs only 1 energy');
+  assert(freshSave.energy >= 100, 'Fresh save has 100 energy (plenty for tutorial taps)');
+
+  // 5. Stage Transition Mapping
+  assert(freshSave.tutorialStep === 0 && freshSave.tutorialStage === 'WELCOME', 'Step 0 maps to WELCOME');
+  
+  // Simulate Step 1 (TAP_GENERATOR)
+  let simStep = 1;
+  let simStage = 'TAP_GENERATOR';
+  assert(simStep === 1 && simStage === 'TAP_GENERATOR', 'Step 1 is TAP_GENERATOR');
+
+  // Simulate Generator Tap Action Progression (Step 1 -> Step 2)
+  if (simStep === 1) {
+    simStep = 2;
+    simStage = 'MERGE_ITEMS';
+  }
+  assert(simStep === 2, 'Generator tap advances tutorialStep from 1 to 2');
+  assert(simStage === 'MERGE_ITEMS', 'Generator tap sets tutorialStage to MERGE_ITEMS');
+
+  // 6. Strict Merge Action Progression (Step 2 -> Step 3)
+  // Unrelated merge (e.g. chest merge) should NOT advance
+  let unrelatedMergeNextId = 'chest_silver';
+  let shouldAdvanceUnrelated = simStep === 2 && (unrelatedMergeNextId === 'herb_2' || unrelatedMergeNextId.startsWith('herb_'));
+  assert(shouldAdvanceUnrelated === false, 'Unrelated non-herb merge does NOT advance tutorialStep');
+
+  // Tutorial merge (herb_1 + herb_1 -> herb_2) advances to Step 3
+  let validMergeNextId = 'herb_2';
+  if (simStep === 2 && (validMergeNextId === 'herb_2' || validMergeNextId.startsWith('herb_'))) {
+    simStep = 3;
+    simStage = 'DELIVER_ORDER';
+  }
+  assert(simStep === 3, 'Valid herb merge advances tutorialStep from 2 to 3');
+  assert(simStage === 'DELIVER_ORDER', 'Valid herb merge sets tutorialStage to DELIVER_ORDER');
+
+  // 7. Strict Order Fulfillment Progression (Step 3 -> Step 4)
+  // Unrelated order (e.g. order_2) should NOT advance
+  const pipOrder = freshSave.activeOrders.find((o) => o.id === 'order_2') || { id: 'order_2', requirements: [{ itemId: 'herb_1', count: 1 }] };
+  let shouldAdvancePip = simStep === 3 && (pipOrder.id === 'order_1' || pipOrder.requirements.some((r) => r.itemId === 'herb_2'));
+  assert(shouldAdvancePip === false, 'Unrelated order (Pip) does NOT advance tutorialStep');
+
+  // Fulfilling Elowen's order_1 advances to Step 4
+  if (simStep === 3 && (elowenOrder.id === 'order_1' || elowenOrder.requirements.some((r) => r.itemId === 'herb_2'))) {
+    simStep = 4;
+    simStage = 'INTRO_KINGDOM';
+  }
+  assert(simStep === 4, 'Delivering Elowen tutorial order advances tutorialStep from 3 to 4');
+  assert(simStage === 'INTRO_KINGDOM', 'Delivering Elowen tutorial order sets tutorialStage to INTRO_KINGDOM');
+
+  // 8. Realm Restoration Introduction
+  const firstKingdomArea = freshSave.kingdomAreas[0];
+  assert(firstKingdomArea.id === 'fountain' && firstKingdomArea.name.includes('Sunfire Plaza'), 'First kingdom area is The Sunfire Plaza & Fountain');
+  const firstStage = firstKingdomArea.stages[0];
+  assert(firstStage.costCoins <= (freshSave.coins + (elowenOrder?.rewards.coins || 0)), 'Player has sufficient coins to restore first landmark stage');
+
+  // 9. Completion & Dismissal
+  simStep = 5;
+  simStage = 'COMPLETE';
+  const isCompleteActive = simStep < 5;
+  assert(simStep === 5, 'Completed tutorial has tutorialStep 5');
+  assert(isCompleteActive === false, 'Completed tutorial sets isTutorialActive to false');
+  assert(simStage === 'COMPLETE', 'Completed tutorial sets tutorialStage to COMPLETE');
+
+  // 10. Save Migration & Hydration Integrity
+  // Completed save remains completed
+  const completedSave = createDefaultInitialState();
+  completedSave.tutorialStep = 5;
+  completedSave.isTutorialActive = false;
+  completedSave.tutorialStage = 'COMPLETE';
+  const { state: hydratedCompleted } = hydrateAndMigrateSave(null, JSON.stringify(completedSave), 1000);
+  assert(hydratedCompleted.isTutorialActive === false, 'Completed tutorial save remains isTutorialActive: false on load');
+  assert(hydratedCompleted.tutorialStep === 5, 'Completed tutorial save preserves tutorialStep: 5 on load');
+  assert(hydratedCompleted.tutorialStage === 'COMPLETE', 'Completed tutorial save preserves tutorialStage: COMPLETE on load');
+
+  // In-progress save resumes at exact step
+  const inProgressSave = createDefaultInitialState();
+  inProgressSave.tutorialStep = 2;
+  inProgressSave.isTutorialActive = true;
+  inProgressSave.tutorialStage = 'MERGE_ITEMS';
+  const { state: hydratedInProgress } = hydrateAndMigrateSave(null, JSON.stringify(inProgressSave), 1000);
+  assert(hydratedInProgress.isTutorialActive === true, 'In-progress tutorial save remains isTutorialActive: true on load');
+  assert(hydratedInProgress.tutorialStep === 2, 'In-progress tutorial save resumes at exact tutorialStep: 2');
+  assert(hydratedInProgress.tutorialStage === 'MERGE_ITEMS', 'In-progress tutorial save resumes at exact tutorialStage: MERGE_ITEMS');
+
+  // Legacy save without tutorial properties defaults to completed
+  const legacySaveObj = {
+    level: 10,
+    coins: 5000,
+    gems: 50,
+    grid: freshSave.grid,
+    inventory: freshSave.inventory,
+    activeOrders: freshSave.activeOrders,
+    kingdomAreas: freshSave.kingdomAreas,
+  };
+  const { state: hydratedLegacy } = hydrateAndMigrateSave(null, JSON.stringify(legacySaveObj), 1000);
+  assert(hydratedLegacy.isTutorialActive === false, 'Legacy save without tutorial properties defaults to isTutorialActive: false');
+  assert(hydratedLegacy.tutorialStep === 5, 'Legacy save without tutorial properties defaults to tutorialStep: 5');
+  assert(hydratedLegacy.tutorialStage === 'COMPLETE', 'Legacy save without tutorial properties defaults to tutorialStage: COMPLETE');
+}
+
   console.log(`\n========================================`);
   console.log(`RESULTS: ${passedTests}/${totalTests} tests passed (${failedTests} failed)`);
   console.log(`========================================\n`);

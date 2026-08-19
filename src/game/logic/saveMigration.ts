@@ -258,6 +258,38 @@ export function hydrateAndMigrateSave(
     const rawXp = typeof parsed.xp === 'number' ? parsed.xp : 0;
     const safeXp = playerLevel >= CURRENT_MAX_PLAYER_LEVEL ? Math.min(defaultXpToNext, rawXp) : rawXp;
 
+    const isLegacySaveWithoutTutorial =
+      isMigratedFromLegacy ||
+      (parsed.tutorialStep === undefined &&
+        parsed.isTutorialActive === undefined &&
+        ((playerLevel || 1) > 1 ||
+          (parsed.stats?.totalMerges || 0) > 0 ||
+          (parsed.stats?.totalOrdersCompleted || 0) > 0 ||
+          (parsed.coins || 0) > 300));
+
+    const resolvedTutorialStep =
+      typeof parsed.tutorialStep === 'number'
+        ? parsed.tutorialStep
+        : parsed.isTutorialActive === false || isLegacySaveWithoutTutorial
+        ? 5
+        : 0;
+
+    const resolvedIsTutorialActive =
+      typeof parsed.isTutorialActive === 'boolean'
+        ? parsed.isTutorialActive
+        : typeof parsed.tutorialStep === 'number'
+        ? parsed.tutorialStep < 5
+        : isLegacySaveWithoutTutorial
+        ? false
+        : true;
+
+    const resolvedTutorialStage =
+      typeof parsed.tutorialStage === 'string'
+        ? parsed.tutorialStage
+        : !resolvedIsTutorialActive || resolvedTutorialStep >= 5
+        ? 'COMPLETE'
+        : 'WELCOME';
+
     const hydrated: GameState = {
       schemaVersion: CURRENT_SCHEMA_VERSION,
       level: playerLevel,
@@ -300,9 +332,9 @@ export function hydrateAndMigrateSave(
       claimedLevelRewardIds: Array.isArray(parsed.claimedLevelRewardIds) ? parsed.claimedLevelRewardIds : [],
       claimedCompendiumMilestoneIds: Array.isArray(parsed.claimedCompendiumMilestoneIds) ? parsed.claimedCompendiumMilestoneIds : [],
 
-      tutorialStep: typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep : (parsed.isTutorialActive === false ? 5 : 0),
-      isTutorialActive: typeof parsed.isTutorialActive === 'boolean' ? parsed.isTutorialActive : (typeof parsed.tutorialStep === 'number' ? parsed.tutorialStep < 5 : true),
-      tutorialStage: typeof parsed.tutorialStage === 'string' ? parsed.tutorialStage : (parsed.isTutorialActive === false || (typeof parsed.tutorialStep === 'number' && parsed.tutorialStep >= 5) ? 'COMPLETE' : 'WELCOME'),
+      tutorialStep: resolvedTutorialStep,
+      isTutorialActive: resolvedIsTutorialActive,
+      tutorialStage: resolvedTutorialStage,
 
       settings: {
         ...defaultState.settings,

@@ -718,12 +718,14 @@ export function useGameState() {
           }
         }
 
-        // Action-driven tutorial advance on merge
+        // Action-driven tutorial advance on merge (merging herb_1 items into herb_2 Sweetbloom Sprout)
         let nextTutorialStep = prev.tutorialStep;
         let nextTutorialStage = prev.tutorialStage;
         if (prev.isTutorialActive && prev.tutorialStep === 2) {
-          nextTutorialStep = 3;
-          nextTutorialStage = 'DELIVER_ORDER';
+          if (nextItemId === 'herb_2' || nextItemId.startsWith('herb_')) {
+            nextTutorialStep = 3;
+            nextTutorialStage = 'DELIVER_ORDER';
+          }
         }
 
         return {
@@ -1022,12 +1024,14 @@ export function useGameState() {
         }
       }
 
-      // Action-driven tutorial advance on order completion (Step 3 -> Step 4)
+      // Action-driven tutorial advance on order completion (Step 3 -> Step 4 for Elowen's order_1)
       let nextTutorialStep = prev.tutorialStep;
       let nextTutorialStage = prev.tutorialStage;
       if (prev.isTutorialActive && prev.tutorialStep === 3) {
-        nextTutorialStep = 4;
-        nextTutorialStage = 'INTRO_KINGDOM';
+        if (order.id === 'order_1' || order.requirements.some((r) => r.itemId === 'herb_2')) {
+          nextTutorialStep = 4;
+          nextTutorialStage = 'INTRO_KINGDOM';
+        }
       }
 
       return {
