@@ -35,47 +35,124 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
   const renderGraphic = () => {
     switch (iconType) {
       // ===== HERB CHAIN =====
-      case 'herb_1': // Tiny Sprout
+      case 'herb_1': // Tiny Sprout / Sweetbloom Seedling
         return (
-          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm">
-            <ellipse cx="50" cy="85" rx="28" ry="8" fill="#451a03" opacity="0.6" />
-            <path d="M50 85 Q50 60 46 45 Q50 48 54 45 Q50 60 50 85" fill="#4d7c0f" />
-            <path d="M48 50 C30 40 22 25 35 18 C46 22 46 38 48 50 Z" fill="#84cc16" />
-            <path d="M48 50 C40 38 40 24 35 18" stroke="#a3e635" strokeWidth="2" fill="none" />
-            <path d="M52 46 C70 38 78 22 65 15 C54 20 54 36 52 46 Z" fill="#65a30d" />
-            <circle cx="34" cy="22" r="3" fill="#fef08a" opacity="0.8" />
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md overflow-visible">
+            <defs>
+              <linearGradient id="h1_soil" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#693b11" />
+                <stop offset="100%" stopColor="#2e1503" />
+              </linearGradient>
+              <linearGradient id="h1_leafL" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#bef264" />
+                <stop offset="45%" stopColor="#84cc16" />
+                <stop offset="100%" stopColor="#4d7c0f" />
+              </linearGradient>
+              <linearGradient id="h1_leafR" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#86efac" />
+                <stop offset="45%" stopColor="#22c55e" />
+                <stop offset="100%" stopColor="#15803d" />
+              </linearGradient>
+              <radialGradient id="h1_dew" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stopColor="#ffffff" />
+                <stop offset="40%" stopColor="#e0f2fe" />
+                <stop offset="100%" stopColor="#38bdf8" />
+              </radialGradient>
+            </defs>
+            {/* Rich fertile soil mound */}
+            <ellipse cx="50" cy="84" rx="26" ry="7.5" fill="url(#h1_soil)" stroke="#1a0b02" strokeWidth="1.5" />
+            <ellipse cx="50" cy="83" rx="22" ry="4.5" fill="#854d0e" opacity="0.6" />
+            {/* Curved sturdy sprout stem */}
+            <path d="M50 83 C50 68 47 52 46 44 C49 46 53 46 54 44 C53 54 52 70 50 83 Z" fill="#65a30d" stroke="#365314" strokeWidth="1" />
+            {/* Left Leaf (Sunlit Lime) */}
+            <path d="M48 48 C26 38 18 20 34 14 C48 18 47 36 48 48 Z" fill="url(#h1_leafL)" stroke="#3f6212" strokeWidth="1.5" />
+            <path d="M48 48 C38 35 34 22 34 14" stroke="#d9f99d" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.9" />
+            {/* Right Leaf (Emerald Heart) */}
+            <path d="M51 45 C73 34 82 17 66 12 C52 16 52 33 51 45 Z" fill="url(#h1_leafR)" stroke="#166534" strokeWidth="1.5" />
+            <path d="M51 45 C60 32 64 20 66 12" stroke="#bbf7d0" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.9" />
+            {/* Dewdrop with glistening sun highlight */}
+            <circle cx="34" cy="20" r="3.8" fill="url(#h1_dew)" filter="drop-shadow(0 1px 2px rgba(0,0,0,0.3))" />
+            <circle cx="33" cy="19" r="1.2" fill="#ffffff" />
+            {/* Tiny pollen spark */}
+            <polygon points="68,14 69.5,17 73,17 70.5,19 71.5,22 68.5,20 65.5,22 66.5,19 64,17 67.5,17" fill="#fef08a" opacity="0.95" />
           </svg>
         );
-      case 'herb_2': // Herb Bundle
+      case 'herb_2': // Herb Bundle / Sweetbloom Sprout
         return (
-          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow">
-            <ellipse cx="50" cy="85" rx="30" ry="7" fill="#0f172a" opacity="0.3" />
-            <path d="M35 75 C20 40 30 20 42 16 C48 30 42 60 38 75 Z" fill="#22c55e" />
-            <path d="M50 78 C42 40 50 15 60 12 C68 25 60 55 52 78 Z" fill="#16a34a" />
-            <path d="M62 76 C75 45 70 25 58 18 C54 32 58 60 60 76 Z" fill="#15803d" />
-            {/* Twine wrap */}
-            <rect x="36" y="58" width="28" height="7" rx="3" fill="#d97706" />
-            <path d="M40 65 L36 78 M60 65 L64 78" stroke="#b45309" strokeWidth="3" strokeLinecap="round" />
-            <circle cx="58" cy="20" r="2.5" fill="#fef08a" />
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg overflow-visible">
+            <defs>
+              <linearGradient id="h2_stalk1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#4ade80" />
+                <stop offset="100%" stopColor="#15803d" />
+              </linearGradient>
+              <linearGradient id="h2_stalk2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#a3e635" />
+                <stop offset="100%" stopColor="#4d7c0f" />
+              </linearGradient>
+              <linearGradient id="h2_stalk3" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#34d399" />
+                <stop offset="100%" stopColor="#047857" />
+              </linearGradient>
+              <linearGradient id="h2_twine" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fbbf24" />
+                <stop offset="50%" stopColor="#d97706" />
+                <stop offset="100%" stopColor="#92400e" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="50" cy="86" rx="28" ry="6" fill="#0f172a" opacity="0.35" />
+            {/* Left Herb Stem & Leaves */}
+            <path d="M36 76 C18 42 26 18 42 12 C48 26 43 58 38 76 Z" fill="url(#h2_stalk1)" stroke="#14532d" strokeWidth="1.5" />
+            <path d="M38 76 C28 44 32 24 42 12" stroke="#bbf7d0" strokeWidth="1.8" fill="none" opacity="0.8" />
+            {/* Right Herb Stem & Leaves */}
+            <path d="M64 76 C82 42 74 18 58 12 C52 26 57 58 62 76 Z" fill="url(#h2_stalk3)" stroke="#064e3b" strokeWidth="1.5" />
+            <path d="M62 76 C72 44 68 24 58 12" stroke="#a7f3d0" strokeWidth="1.8" fill="none" opacity="0.8" />
+            {/* Center Dominant Herb Stem */}
+            <path d="M50 78 C38 42 46 14 56 10 C66 22 60 55 52 78 Z" fill="url(#h2_stalk2)" stroke="#365314" strokeWidth="1.5" />
+            <path d="M51 78 C44 42 50 20 56 10" stroke="#ecfccb" strokeWidth="2" fill="none" opacity="0.9" />
+            {/* Golden Twine / Raffia Wrap with knot */}
+            <rect x="33" y="56" width="34" height="9" rx="4" fill="url(#h2_twine)" stroke="#78350f" strokeWidth="1.5" />
+            <path d="M38 56 C44 60 56 60 62 56" stroke="#fef08a" strokeWidth="1.5" fill="none" />
+            <circle cx="50" cy="60.5" r="4.5" fill="#f59e0b" stroke="#78350f" strokeWidth="1.2" />
+            {/* Hanging twine tails */}
+            <path d="M47 64 C42 72 38 78 36 82 M53 64 C58 72 62 78 64 82" stroke="#d97706" strokeWidth="3" strokeLinecap="round" />
+            {/* Shimmering Pollen particles */}
+            <circle cx="58" cy="18" r="2.8" fill="#fef08a" />
+            <circle cx="34" cy="24" r="2.2" fill="#ffffff" />
           </svg>
         );
       case 'herb_3': // Mystic Herb
         return (
-          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
-            <circle cx="50" cy="50" r="38" fill="url(#greenGlow)" opacity="0.4" />
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl overflow-visible">
             <defs>
-              <radialGradient id="greenGlow">
+              <radialGradient id="h3_glow" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="#34d399" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                <stop offset="60%" stopColor="#10b981" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#059669" stopOpacity="0" />
               </radialGradient>
+              <linearGradient id="h3_petalA" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#6ee7b7" />
+                <stop offset="100%" stopColor="#047857" />
+              </linearGradient>
+              <linearGradient id="h3_petalB" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#a7f3d0" />
+                <stop offset="100%" stopColor="#065f46" />
+              </linearGradient>
             </defs>
-            <path d="M50 85 Q50 45 45 25 Q55 45 50 85" fill="#065f46" />
-            <path d="M45 45 C15 35 15 15 35 10 C50 18 48 35 45 45 Z" fill="#10b981" />
-            <path d="M55 40 C85 30 85 10 65 5 C50 15 52 32 55 40 Z" fill="#34d399" />
-            <path d="M50 60 C80 55 80 35 68 30 C58 38 52 50 50 60 Z" fill="#059669" />
-            <path d="M50 62 C20 58 20 38 32 32 C42 40 48 52 50 62 Z" fill="#059669" />
-            {/* Sparkles */}
-            <polygon points="50,15 52,22 59,24 52,26 50,33 48,26 41,24 48,22" fill="#a7f3d0" />
+            <circle cx="50" cy="50" r="42" fill="url(#h3_glow)" />
+            {/* Central stem */}
+            <path d="M50 86 Q50 50 48 24 Q52 50 50 86" fill="#064e3b" />
+            {/* Multi-tier crystalline botanical foliage */}
+            <path d="M48 48 C14 36 12 12 36 8 C52 18 50 36 48 48 Z" fill="url(#h3_petalA)" stroke="#065f46" strokeWidth="1.5" />
+            <path d="M52 44 C86 32 88 8 64 4 C48 14 50 32 52 44 Z" fill="url(#h3_petalB)" stroke="#065f46" strokeWidth="1.5" />
+            <path d="M50 62 C84 56 86 34 70 28 C58 38 52 52 50 62 Z" fill="url(#h3_petalA)" stroke="#064e3b" strokeWidth="1.5" />
+            <path d="M50 64 C16 58 14 36 30 30 C42 40 48 54 50 64 Z" fill="url(#h3_petalB)" stroke="#064e3b" strokeWidth="1.5" />
+            {/* Center glowing blossom node */}
+            <circle cx="50" cy="38" r="7" fill="#fef08a" stroke="#d97706" strokeWidth="1.5" />
+            <circle cx="50" cy="38" r="4" fill="#ffffff" />
+            {/* Mana sparkles */}
+            <polygon points="50,12 52,18 58,20 52,22 50,28 48,22 42,20 48,18" fill="#ffffff" />
+            <polygon points="76,28 77,32 81,33 77,34 76,38 75,34 71,33 75,32" fill="#a7f3d0" />
+            <polygon points="24,30 25,34 29,35 25,36 24,40 23,36 19,35 23,34" fill="#fef08a" />
           </svg>
         );
       case 'herb_4': // Moonleaf
@@ -587,17 +664,59 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
       // ===== GENERATORS =====
       case 'gen_garden':
         return (
-          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
-            <ellipse cx="50" cy="85" rx="34" ry="9" fill="#064e3b" opacity="0.4" />
-            {/* Terracotta/stone planter pot */}
-            <path d="M22 45 L28 82 C29 86 33 88 40 88 L60 88 C67 88 71 86 72 82 L78 45 Z" fill="#9a3412" stroke="#7c2d12" strokeWidth="2.5" />
-            <rect x="18" y="38" width="64" height="10" rx="3" fill="#ea580c" stroke="#c2410c" strokeWidth="2" />
-            {/* Lush glowing plants */}
-            <circle cx="50" cy="28" r="22" fill="#10b981" />
-            <circle cx="35" cy="32" r="16" fill="#34d399" />
-            <circle cx="65" cy="32" r="16" fill="#059669" />
-            {/* Golden Star bloom in center */}
-            <polygon points="50,16 53,24 61,24 55,29 57,37 50,32 43,37 45,29 39,24 47,24" fill="#facc15" />
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl overflow-visible">
+            <defs>
+              <linearGradient id="g_pot" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#ea580c" />
+                <stop offset="40%" stopColor="#c2410c" />
+                <stop offset="100%" stopColor="#7c2d12" />
+              </linearGradient>
+              <linearGradient id="g_gold" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#fef08a" />
+                <stop offset="50%" stopColor="#facc15" />
+                <stop offset="100%" stopColor="#b45309" />
+              </linearGradient>
+              <linearGradient id="g_leaf" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#4ade80" />
+                <stop offset="60%" stopColor="#16a34a" />
+                <stop offset="100%" stopColor="#065f46" />
+              </linearGradient>
+              <radialGradient id="g_aura" cx="50%" cy="40%" r="55%">
+                <stop offset="0%" stopColor="#86efac" stopOpacity="0.7" />
+                <stop offset="60%" stopColor="#22c55e" stopOpacity="0.25" />
+                <stop offset="100%" stopColor="#15803d" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            {/* Ground shadow & Magical Growth Aura */}
+            <ellipse cx="50" cy="88" rx="36" ry="8" fill="#0f172a" opacity="0.45" />
+            <circle cx="50" cy="42" r="40" fill="url(#g_aura)" />
+
+            {/* Dimensional Planter Urn Base */}
+            <path d="M22 46 L27 82 C28 87 34 89 42 89 L58 89 C66 89 72 87 73 82 L78 46 Z" fill="url(#g_pot)" stroke="#431407" strokeWidth="2.5" />
+            {/* Planter Rim Band with Gold Inlay */}
+            <rect x="17" y="38" width="66" height="11" rx="4" fill="url(#g_gold)" stroke="#78350f" strokeWidth="2" />
+            <line x1="20" y1="43.5" x2="80" y2="43.5" stroke="#ffffff" strokeWidth="1.2" opacity="0.8" />
+            {/* Carved Rune on Pot Body */}
+            <polygon points="50,56 55,65 50,74 45,65" fill="#facc15" stroke="#78350f" strokeWidth="1.5" />
+            <circle cx="50" cy="65" r="3" fill="#ffffff" />
+
+            {/* Overflowing Tiered Flora */}
+            <ellipse cx="50" cy="30" rx="26" ry="20" fill="url(#g_leaf)" stroke="#064e3b" strokeWidth="2" />
+            <ellipse cx="32" cy="35" rx="18" ry="16" fill="#22c55e" stroke="#14532d" strokeWidth="1.5" />
+            <ellipse cx="68" cy="35" rx="18" ry="16" fill="#15803d" stroke="#064e3b" strokeWidth="1.5" />
+
+            {/* Golden Blooming Sunflowers on Top */}
+            <g transform="translate(50, 22)">
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((ang, i) => (
+                <ellipse key={i} cx="0" cy="-10" rx="3.5" ry="7" fill="#fde047" stroke="#ca8a04" strokeWidth="0.8" transform={`rotate(${ang})`} />
+              ))}
+              <circle cx="0" cy="0" r="7" fill="#92400e" stroke="#78350f" strokeWidth="1" />
+              <circle cx="0" cy="0" r="4.5" fill="#facc15" />
+            </g>
+
+            {/* Sprouting Sparkles & Sunbursts */}
+            <polygon points="26,18 28,23 33,23 29,26 31,31 26,28 21,31 23,26 19,23 24,23" fill="#ffffff" />
+            <polygon points="74,18 76,23 81,23 77,26 79,31 74,28 69,31 71,26 67,23 72,23" fill="#fef08a" />
           </svg>
         );
 
@@ -787,17 +906,58 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
       case 'chest_wooden':
       case 'chest_silver':
       case 'chest_golden':
-      case 'chest_royal':
+      case 'chest_royal': {
+        const isSilver = iconType === 'chest_silver';
+        const isGold = iconType === 'chest_golden';
+        const isRoyal = iconType === 'chest_royal';
         return (
-          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl">
-            <circle cx="50" cy="50" r="42" fill={color} opacity="0.3" />
-            <rect x="18" y="45" width="64" height="38" rx="4" fill={color} stroke="#1e293b" strokeWidth="2.5" />
-            <path d="M16 45 C16 26 84 26 84 45 Z" fill={color} stroke="#1e293b" strokeWidth="2.5" />
-            <rect x="30" y="28" width="8" height="55" fill="#facc15" />
-            <rect x="62" y="28" width="8" height="55" fill="#facc15" />
-            <circle cx="50" cy="52" r="7" fill="#facc15" stroke="#78350f" strokeWidth="2" />
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl overflow-visible">
+            <defs>
+              <linearGradient id={`ch_lid_${iconType}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={isRoyal ? '#a855f7' : isGold ? '#f59e0b' : isSilver ? '#94a3b8' : '#b45309'} />
+                <stop offset="50%" stopColor={isRoyal ? '#6b21a8' : isGold ? '#b45309' : isSilver ? '#475569' : '#78350f'} />
+                <stop offset="100%" stopColor={isRoyal ? '#3b0764' : isGold ? '#78350f' : isSilver ? '#1e293b' : '#451a03'} />
+              </linearGradient>
+              <linearGradient id={`ch_base_${iconType}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={isRoyal ? '#7e22ce' : isGold ? '#d97706' : isSilver ? '#64748b' : '#92400e'} />
+                <stop offset="100%" stopColor={isRoyal ? '#2e1065' : isGold ? '#451a03' : isSilver ? '#0f172a' : '#3d1302'} />
+              </linearGradient>
+              <linearGradient id={`ch_metal_${iconType}`} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={isSilver ? '#f1f5f9' : '#fef08a'} />
+                <stop offset="35%" stopColor={isSilver ? '#cbd5e1' : '#facc15'} />
+                <stop offset="70%" stopColor={isSilver ? '#64748b' : '#ca8a04'} />
+                <stop offset="100%" stopColor={isSilver ? '#334155' : '#78350f'} />
+              </linearGradient>
+            </defs>
+            <ellipse cx="50" cy="88" rx="35" ry="7.5" fill="#0f172a" opacity="0.45" />
+            {/* Chest Base */}
+            <rect x="18" y="46" width="64" height="38" rx="5" fill={`url(#ch_base_${iconType})`} stroke="#1e293b" strokeWidth="2.5" />
+            {/* Vertical Wood Planks Lines */}
+            <line x1="38" y1="47" x2="38" y2="83" stroke="#1e293b" strokeWidth="1" opacity="0.6" />
+            <line x1="62" y1="47" x2="62" y2="83" stroke="#1e293b" strokeWidth="1" opacity="0.6" />
+            {/* Arched Lid */}
+            <path d="M16 46 C16 24 84 24 84 46 Z" fill={`url(#ch_lid_${iconType})`} stroke="#1e293b" strokeWidth="2.5" />
+            {/* Metal Reinforcing Straps */}
+            <rect x="28" y="28" width="9" height="56" rx="2" fill={`url(#ch_metal_${iconType})`} stroke="#1e293b" strokeWidth="1.5" />
+            <rect x="63" y="28" width="9" height="56" rx="2" fill={`url(#ch_metal_${iconType})`} stroke="#1e293b" strokeWidth="1.5" />
+            {/* Rivets on Straps */}
+            <circle cx="32.5" cy="33" r="1.6" fill={isSilver ? '#ffffff' : '#fef08a'} stroke="#475569" strokeWidth="0.8" />
+            <circle cx="32.5" cy="48" r="1.6" fill={isSilver ? '#ffffff' : '#fef08a'} stroke="#475569" strokeWidth="0.8" />
+            <circle cx="32.5" cy="78" r="1.6" fill={isSilver ? '#ffffff' : '#fef08a'} stroke="#475569" strokeWidth="0.8" />
+            <circle cx="67.5" cy="33" r="1.6" fill={isSilver ? '#ffffff' : '#fef08a'} stroke="#475569" strokeWidth="0.8" />
+            <circle cx="67.5" cy="48" r="1.6" fill={isSilver ? '#ffffff' : '#fef08a'} stroke="#475569" strokeWidth="0.8" />
+            <circle cx="67.5" cy="78" r="1.6" fill={isSilver ? '#ffffff' : '#fef08a'} stroke="#475569" strokeWidth="0.8" />
+            {/* Central Ornate Lock Clasp & Keyhole */}
+            <rect x="43" y="42" width="14" height="17" rx="3" fill={`url(#ch_metal_${iconType})`} stroke="#1e293b" strokeWidth="1.5" />
+            <circle cx="50" cy="48" r="2.8" fill="#0f172a" />
+            <polygon points="50,49 48,55 52,55" fill="#0f172a" />
+            {/* Treasure light seam */}
+            <line x1="18" y1="46" x2="82" y2="46" stroke={isRoyal ? '#f0abfc' : isGold ? '#fef08a' : '#e2e8f0'} strokeWidth="1.5" opacity="0.85" />
+            {/* Sparkles */}
+            <polygon points="22,24 24,29 29,29 25,32 27,37 22,34 17,37 19,32 15,29 20,29" fill={isSilver ? '#ffffff' : '#fef08a'} />
           </svg>
         );
+      }
 
       default:
         return (
@@ -817,7 +977,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
 
       {/* Generator lightning badge or level badge */}
       {isGenerator && (
-        <div className="absolute -top-1 -right-1 bg-amber-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded-full border border-amber-200 shadow flex items-center gap-0.5">
+        <div className="absolute -top-1 -right-1 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black text-[10px] px-1.5 py-0.5 rounded-full border border-yellow-200 shadow flex items-center gap-0.5 z-10">
           <span>⚡</span>
           <span>{tier}</span>
         </div>
@@ -826,9 +986,10 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
       {/* Item Tier Badge */}
       {!isGenerator && showTierBadge && maxTier > 1 && (
         <div
-          className="absolute -bottom-1 -right-1 text-[10px] font-black px-1.5 py-0.2 rounded-full border border-white/40 shadow-sm text-white"
+          className="absolute -bottom-1 -right-1 text-[9px] font-black px-1.5 py-0.2 rounded-full shadow-md text-white border flex items-center justify-center leading-tight tracking-tight z-10"
           style={{
-            backgroundColor: tier >= 7 ? '#d97706' : tier >= 5 ? '#7c3aed' : tier >= 3 ? '#2563eb' : '#475569',
+            background: tier >= 7 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : tier >= 5 ? 'linear-gradient(135deg, #a855f7, #7c3aed)' : tier >= 3 ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' : 'linear-gradient(135deg, #64748b, #475569)',
+            borderColor: tier >= 7 ? '#fde68a' : tier >= 5 ? '#e9d5ff' : tier >= 3 ? '#bfdbfe' : '#cbd5e1',
           }}
         >
           T{tier}

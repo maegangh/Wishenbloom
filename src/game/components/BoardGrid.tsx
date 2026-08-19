@@ -143,17 +143,23 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto aspect-[7/9] p-1.5 select-none touch-none">
-      {/* Fantasy Golden Wood Outer Frame */}
+    <div className="relative w-full max-w-md mx-auto aspect-[7/9] p-1 select-none touch-none">
+      {/* Fantasy Golden Wood & Runed Planter Outer Frame */}
       <div
         className="w-full h-full p-2 rounded-3xl relative overflow-hidden shadow-2xl"
         style={{
-          background: 'linear-gradient(145deg, #7c4d23 0%, #4a2810 50%, #2b1405 100%)',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.5), inset 0 2px 4px rgba(255,225,150,0.4), inset 0 -3px 6px rgba(0,0,0,0.8)',
+          background: 'linear-gradient(145deg, #5c3514 0%, #3e1f08 45%, #221002 100%)',
+          boxShadow: '0 16px 36px rgba(0,0,0,0.65), inset 0 2px 4px rgba(255,230,160,0.45), inset 0 -3px 6px rgba(0,0,0,0.85)',
           border: '2px solid #ca8a04',
         }}
       >
-        {/* Inner Board Parchment Grid Container */}
+        {/* Carved Corner Brass Filigree Ornaments */}
+        <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-yellow-400/80 rounded-tl-md pointer-events-none" />
+        <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-yellow-400/80 rounded-tr-md pointer-events-none" />
+        <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-yellow-400/80 rounded-bl-md pointer-events-none" />
+        <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-yellow-400/80 rounded-br-md pointer-events-none" />
+
+        {/* Inner Board Garden Worktable / Soil Grid Container */}
         <div
           ref={boardRef}
           onPointerMove={handlePointerMove}
@@ -161,7 +167,7 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
           onPointerCancel={() => setDragState(null)}
           className="w-full h-full rounded-2xl p-1 grid grid-cols-7 grid-rows-9 gap-1 shadow-inner relative overflow-hidden"
           style={{
-            backgroundColor: '#e6d7b8',
+            background: 'linear-gradient(180deg, #e8d9ba 0%, #dfcbb0 50%, #d5c0a3 100%)',
             boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.35)',
           }}
         >
@@ -204,22 +210,29 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
                   onPointerDown={(e) => handlePointerDown(e, rIdx, cIdx)}
                   className={`relative w-full h-full rounded-xl flex items-center justify-center transition-all cursor-pointer ${
                     (rIdx + cIdx) % 2 === 0
-                      ? 'bg-[#fcf7ee] shadow-[inset_0_1px_2px_rgba(255,255,255,0.9)]'
-                      : 'bg-[#f3e7cb] shadow-[inset_0_1px_2px_rgba(255,255,255,0.6)]'
+                      ? 'bg-gradient-to-b from-[#fdfbf6] via-[#f7ecd6] to-[#ecdcbe] shadow-[inset_0_1.5px_0_rgba(255,255,255,0.95),inset_0_-1.5px_0_rgba(180,140,80,0.25)] border-[#d8c59f]'
+                      : 'bg-gradient-to-b from-[#f6ede0] via-[#e9d9b8] to-[#decba6] shadow-[inset_0_1.5px_0_rgba(255,255,255,0.8),inset_0_-1.5px_0_rgba(180,140,80,0.35)] border-[#cfba90]'
                   } border ${
                     isSelected
-                      ? 'border-cyan-400 bg-cyan-50/90 shadow-md ring-2 ring-cyan-400/80 z-10'
+                      ? 'border-cyan-400 bg-cyan-50/90 shadow-md ring-2 ring-cyan-400/90 z-10'
                       : isMergeHover
-                      ? 'border-emerald-500 bg-emerald-100 scale-105 shadow-lg ring-2 ring-emerald-400 z-20'
+                      ? 'border-emerald-500 bg-emerald-100/90 scale-105 shadow-lg ring-2 ring-emerald-400 z-20'
                       : isHoverTarget
                       ? 'border-amber-500 bg-amber-100 scale-102 z-10'
                       : isTutorialGenTarget
-                      ? 'border-amber-400 bg-amber-50 ring-4 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.8)] z-20'
+                      ? 'border-amber-400 bg-amber-50 ring-4 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.85)] z-20'
                       : isTutorialMergeTarget
-                      ? 'border-emerald-400 bg-emerald-50 ring-4 ring-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.8)] z-20'
-                      : 'border-[#d4c39e] hover:border-amber-400/80'
+                      ? 'border-emerald-400 bg-emerald-50 ring-4 ring-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.85)] z-20'
+                      : 'hover:border-amber-400/80'
                   }`}
                 >
+                  {/* Empty Cell Soil Plot Motif */}
+                  {!cell && !isHoverTarget && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-25">
+                      <span className="text-[10px] text-[#8c6b45]">✤</span>
+                    </div>
+                  )}
+
                   {/* Tutorial Callout Badge */}
                   {isTutorialGenTarget && (
                     <div className="absolute -top-2.5 -right-2.5 bg-amber-400 text-slate-950 text-[8px] font-black px-1.5 py-0.2 rounded-full border border-yellow-200 shadow-md z-30 animate-bounce">
@@ -246,14 +259,14 @@ export const BoardGrid: React.FC<BoardGridProps> = ({
                     </div>
                   )}
 
-                  {/* Cell Item Content */}
+                  {/* Cell Item Content (Targeting ~90% Fill) */}
                   {cell && !isDragSource && (
                     <div className="relative w-full h-full flex items-center justify-center p-0.5">
                       <ItemIcon
                         itemId={cell.itemId}
                         isGenerator={cell.isGenerator}
                         generatorId={cell.generatorId}
-                        size="86%"
+                        size="90%"
                       />
 
                       {/* Generator Cooldown Indicator */}
