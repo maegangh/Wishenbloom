@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ITEMS } from '../data/items';
 import { GENERATORS } from '../data/generators';
 
@@ -33,6 +33,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
   className = '',
   showTierBadge = true,
 }) => {
+  const [imgError, setImgError] = useState(false);
   const item = itemId ? ITEMS[itemId] : null;
   const generator = generatorId ? GENERATORS[generatorId] : null;
 
@@ -47,13 +48,14 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
   // Render graphic for each icon type
   const renderGraphic = () => {
     // Check if production raster asset is defined for Sweetbloom
-    if (!isGenerator && SWEETBLOOM_ASSETS[iconType]) {
+    if (!isGenerator && !imgError && SWEETBLOOM_ASSETS[iconType]) {
       return (
         <img
           src={SWEETBLOOM_ASSETS[iconType]}
           alt={item?.name || iconType}
           className="w-[88%] h-[88%] max-w-full max-h-full object-contain select-none pointer-events-none drop-shadow-md transition-transform duration-200"
           draggable={false}
+          onError={() => setImgError(true)}
         />
       );
     }
