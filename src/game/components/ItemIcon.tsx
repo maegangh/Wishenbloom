@@ -12,6 +12,19 @@ interface ItemIconProps {
   animate?: boolean;
 }
 
+const SWEETBLOOM_ASSETS: Record<string, string> = {
+  herb_1: '/assets/items/sweetbloom/herb_1.png',
+  herb_2: '/assets/items/sweetbloom/herb_2.png',
+  herb_3: '/assets/items/sweetbloom/herb_3.png',
+  herb_4: '/assets/items/sweetbloom/herb_4.png',
+  herb_5: '/assets/items/sweetbloom/herb_5.png',
+  herb_6: '/assets/items/sweetbloom/herb_6.png',
+  herb_7: '/assets/items/sweetbloom/herb_7.png',
+  herb_8: '/assets/items/sweetbloom/herb_8.png',
+  herb_9: '/assets/items/sweetbloom/herb_9.png',
+  herb_10: '/assets/items/sweetbloom/herb_10.png',
+};
+
 export const ItemIcon: React.FC<ItemIconProps> = ({
   itemId,
   isGenerator,
@@ -31,11 +44,23 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
   const maxTier = item?.maxTier || generator?.maxLevel || 8;
   const color = item?.color || generator?.color || '#10b981';
 
-  // Render SVG graphic for each icon type
+  // Render graphic for each icon type
   const renderGraphic = () => {
+    // Check if production raster asset is defined for Sweetbloom
+    if (!isGenerator && SWEETBLOOM_ASSETS[iconType]) {
+      return (
+        <img
+          src={SWEETBLOOM_ASSETS[iconType]}
+          alt={item?.name || iconType}
+          className="w-[88%] h-[88%] max-w-full max-h-full object-contain select-none pointer-events-none drop-shadow-md transition-transform duration-200"
+          draggable={false}
+        />
+      );
+    }
+
     switch (iconType) {
-      // ===== HERB CHAIN =====
-      case 'herb_1': // Tiny Sprout / Sweetbloom Seedling
+      // ===== HERB CHAIN (FALLBACKS) =====
+      case 'herb_1': // Sweetbloom Seedling
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md overflow-visible">
             <defs>
@@ -77,7 +102,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             <polygon points="68,14 69.5,17 73,17 70.5,19 71.5,22 68.5,20 65.5,22 66.5,19 64,17 67.5,17" fill="#fef08a" opacity="0.95" />
           </svg>
         );
-      case 'herb_2': // Herb Bundle / Sweetbloom Sprout
+      case 'herb_2': // Sweetbloom Sprout
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg overflow-visible">
             <defs>
@@ -120,7 +145,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             <circle cx="34" cy="24" r="2.2" fill="#ffffff" />
           </svg>
         );
-      case 'herb_3': // Mystic Herb
+      case 'herb_3': // Sweetbloom Youngling
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl overflow-visible">
             <defs>
@@ -155,7 +180,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             <polygon points="24,30 25,34 29,35 25,36 24,40 23,36 19,35 23,34" fill="#fef08a" />
           </svg>
         );
-      case 'herb_4': // Moonleaf
+      case 'herb_4': // Sweetbloom Bud
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-md">
             <circle cx="50" cy="50" r="42" fill="url(#tealGlow)" opacity="0.4" />
@@ -176,7 +201,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             <circle cx="62" cy="35" r="2" fill="#ffffff" />
           </svg>
         );
-      case 'herb_5': // Starbloom
+      case 'herb_5': // Sweetbloom Blossom
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg">
             <circle cx="50" cy="50" r="44" fill="#06b6d4" opacity="0.25" />
@@ -195,7 +220,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             </g>
           </svg>
         );
-      case 'herb_6': // Arcane Blossom
+      case 'herb_6': // Sweetbloom Bloom
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-xl">
             <circle cx="50" cy="50" r="46" fill="#8b5cf6" opacity="0.3" />
@@ -213,7 +238,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             </g>
           </svg>
         );
-      case 'herb_7': // Celestial Flower
+      case 'herb_7': // Sweetbloom Bouquet
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl">
             <circle cx="50" cy="50" r="48" fill="#ec4899" opacity="0.3" />
@@ -231,7 +256,7 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
             </g>
           </svg>
         );
-      case 'herb_8': // Crownflower of Eternity
+      case 'herb_8': // Sweetbloom Flourish
         return (
           <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl">
             <circle cx="50" cy="50" r="48" fill="#eab308" opacity="0.35" />
@@ -244,6 +269,48 @@ export const ItemIcon: React.FC<ItemIconProps> = ({
               <circle cx="26" cy="-25" r="4" fill="#38bdf8" />
               <circle cx="0" cy="-6" r="6" fill="#f43f5e" />
               <path d="M-30 20 C0 35 0 35 30 20 C18 10 -18 10 -30 20 Z" fill="#ca8a04" />
+            </g>
+          </svg>
+        );
+      case 'herb_9': // Sweetbloom Radiance
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl">
+            <circle cx="50" cy="50" r="48" fill="#f43f5e" opacity="0.35" />
+            <g transform="translate(50,50)">
+              <ellipse cx="0" cy="0" rx="44" ry="18" fill="none" stroke="#f43f5e" strokeWidth="1.5" strokeDasharray="3 4" transform="rotate(-25)"/>
+              <circle cx="-38" cy="15" r="5" fill="#fb7185" />
+              <circle cx="38" cy="-15" r="5" fill="#facc15" />
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                <path
+                  key={i}
+                  d="M0 0 C-10 -20 0 -44 0 -44 C0 -44 10 -20 0 0 Z"
+                  fill={i % 2 === 0 ? '#fb7185' : '#e11d48'}
+                  transform={`rotate(${angle})`}
+                />
+              ))}
+              <circle cx="0" cy="0" r="16" fill="#fbbf24" />
+              <circle cx="0" cy="0" r="9" fill="#ffffff" />
+            </g>
+          </svg>
+        );
+      case 'herb_10': // Sweetbloom Ascendant
+        return (
+          <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-2xl">
+            <circle cx="50" cy="50" r="48" fill="#f59e0b" opacity="0.35" />
+            <g transform="translate(50,50)">
+              {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => (
+                <polygon key={`r-${i}`} points="0,-48 3,-36 -3,-36" fill="#fde047" transform={`rotate(${angle})`} />
+              ))}
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, i) => (
+                <path
+                  key={`p-${i}`}
+                  d="M0 0 C-12 -18 0 -45 0 -45 C0 -45 12 -18 0 0 Z"
+                  fill={i % 2 === 0 ? '#fde047' : '#f59e0b'}
+                  transform={`rotate(${angle})`}
+                />
+              ))}
+              <circle cx="0" cy="0" r="15" fill="#f59e0b" stroke="#78350f" strokeWidth="2"/>
+              <polygon points="0,-10 8,0 0,10 -8,0" fill="#ffffff"/>
             </g>
           </svg>
         );

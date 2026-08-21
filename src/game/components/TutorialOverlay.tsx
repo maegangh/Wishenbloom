@@ -198,7 +198,7 @@ export const TutorialOverlay: React.FC<TutorialOverlayProps> = ({
                 </button>
               </div>
               <p className="text-xs text-stone-100 font-bold leading-tight mt-0.5">
-                Drag one Lavender Seedling onto another matching seedling to merge into a Sweetbloom Sprout!
+                Drag one Sweetbloom Seedling onto another matching seedling to merge into a Sweetbloom Sprout!
               </p>
             </div>
           </div>

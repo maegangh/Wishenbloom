@@ -46,7 +46,7 @@ export const GENERATORS: Record<string, GeneratorDef> = {
     maxLevel: 4,
     energyCost: 1,
     cooldownMs: 0,
-    description: 'A thriving conservatory of rare flora. Chance to drop Moonleaf!',
+    description: 'A thriving conservatory of rare flora. Chance to drop Sweetbloom Bud!',
     drops: [
       { itemId: 'herb_1', weight: 40 },
       { itemId: 'herb_2', weight: 35 },

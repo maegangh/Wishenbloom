@@ -100,7 +100,7 @@ export const INITIAL_ORDERS: NPCOrder[] = [
     npcName: 'Elowen',
     npcRole: 'Forest Guardian',
     npcAvatar: 'elowen',
-    npcQuote: 'Greetings, Bloomkeeper! The dormant soil stirs. Bring me a fresh Herb Bundle to awaken the roots.',
+    npcQuote: 'Greetings, Bloomkeeper! The dormant soil stirs. Bring me a fresh Sweetbloom Sprout to awaken the roots.',
     requirements: [
       { itemId: 'herb_2', count: 1 },
     ],
@@ -134,7 +134,7 @@ export const INITIAL_ORDERS: NPCOrder[] = [
     npcName: 'Elowen',
     npcRole: 'Forest Guardian',
     npcAvatar: 'elowen',
-    npcQuote: 'The seedlings grow so fast under your touch! May I have a couple more Tiny Sprouts?',
+    npcQuote: 'The seedlings grow so fast under your touch! May I have a couple more Sweetbloom Seedlings?',
     requirements: [
       { itemId: 'herb_1', count: 2 },
     ],
